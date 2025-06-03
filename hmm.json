@@ -14,8 +14,8 @@
       "name": "lime",
       "type": "git",
       "dir": null,
-      "ref": "develop",
-      "url": "https://github.com/openfl/lime.git"
+      "ref": "funkin-patches",
+      "url": "https://github.com/FunkinCrew/hmm.git"
     },
     {
       "name": "openfl",
