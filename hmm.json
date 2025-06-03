@@ -9,8 +9,8 @@
       "name": "lime",
       "type": "git",
       "dir": null,
-      "ref": "master",
-      "url": "https://github.com/marcotcr/lime-experiments.git"
+      "ref": "develop",
+      "url": "https://github.com/openfl/lime.git"
     },
     {
       "name": "openfl",
@@ -54,7 +54,7 @@
       "type": "git",
       "dir": null,
       "ref": "main",
-      "url": "https://github.com/CCobaltDev/SScript-Archive"
+      "url": "https://github.com/Snirozu/SScript-7.7.0"
     },
     {
       "name": "hxdiscord_rpc",
@@ -87,6 +87,13 @@
       "name": "away3d",
       "type": "haxelib",
       "version": "5.0.9"
+    },
+    {
+      "name": "away3d",
+      "type": "git",
+      "dir": null,
+      "ref": "master",
+      "url": "https://github.com/Snirozu/away3d"
     },
     {
       "name": "json2object",
@@ -143,6 +150,13 @@
       "name": "hxvlc",
       "type": "haxelib",
       "version": "2.0.1"
+    },
+    {
+      "name": "extension-androidtools",
+      "type": "git",
+      "dir": null,
+      "ref": "main",
+      "url": "https://github.com/MAJigsaw77/extension-androidtools"
     }
   ]
 }
