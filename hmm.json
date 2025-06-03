@@ -8,7 +8,7 @@
       {
       "name": "lime",
       "type": "haxelib",
-      "version": "8.1.3"
+      "version": "8.1.2"
     },
     {
       "name": "lime",
@@ -20,7 +20,7 @@
     {
       "name": "openfl",
       "type": "haxelib",
-      "version": "9.4.1"
+      "version": "9.3.3"
     },
     {
       "name": "flixel",
@@ -50,6 +50,11 @@
       "url": "https://github.com/HaxeFoundation/hxcpp.git"
     },
     {
+      "name": "hxcpp",
+      "type": "haxelib",
+      "version": "4.3.2"
+    },
+    {
       "name": "tjson",
       "type": "haxelib",
       "version": "1.4.0"
@@ -62,9 +67,16 @@
       "url": "https://github.com/Snirozu/SScript-7.7.0"
     },
     {
+      "name": "discord_rpc",
+      "type": "git",
+      "dir": null,
+      "ref": "master",
+      "url": "https://github.com/Aidan63/linc_discord-rpc"
+    },
+    {
       "name": "hxdiscord_rpc",
       "type": "haxelib",
-      "version": null
+      "version": 1.2.4
     },
     {
       "name": "linc_luajit",
@@ -120,7 +132,7 @@
     {
       "name": "lumod",
       "type": "haxelib",
-      "version": "2.0.0"
+      "version": "2.1.0"
     },
     {
       "name": "actuate",
