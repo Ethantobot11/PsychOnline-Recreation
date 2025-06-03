@@ -1,0 +1,148 @@
+{
+  "dependencies": [
+    {
+      "name": "hscript",
+      "type": "haxelib",
+      "version": "2.6.0"
+    },
+    {
+      "name": "lime",
+      "type": "git",
+      "dir": null,
+      "ref": "master",
+      "url": "https://github.com/marcotcr/lime-experiments.git"
+    },
+    {
+      "name": "openfl",
+      "type": "haxelib",
+      "version": "9.4.1"
+    },
+    {
+      "name": "flixel",
+      "type": "haxelib",
+      "version": "6.0.0"
+    },
+    {
+      "name": "flixel-addons",
+      "type": "haxelib",
+      "version": "3.3.2"
+    },
+    {
+      "name": "flixel-tools",
+      "type": "haxelib",
+      "version": "1.5.1"
+    },
+    {
+      "name": "flixel-ui",
+      "type": "haxelib",
+      "version": "2.6.4"
+    },
+    {
+      "name": "hxcpp",
+      "type": "git",
+      "dir": null,
+      "ref": "master",
+      "url": "https://github.com/HaxeFoundation/hxcpp.git"
+    },
+    {
+      "name": "tjson",
+      "type": "haxelib",
+      "version": "1.4.0"
+    },
+    {
+      "name": "SScript",
+      "type": "git",
+      "dir": null,
+      "ref": "main",
+      "url": "https://github.com/CCobaltDev/SScript-Archive"
+    },
+    {
+      "name": "hxdiscord_rpc",
+      "type": "haxelib",
+      "version": null
+    },
+    {
+      "name": "linc_luajit",
+      "type": "git",
+      "dir": null,
+      "ref": "main",
+      "url": "https://github.com/mcagabe19/linc_luajit-rewriten"
+    },
+    {
+      "name": "colyseus",
+      "type": "haxelib",
+      "version": "0.15.2"
+    },
+    {
+      "name": "HtmlParser",
+      "type": "haxelib",
+      "version": "3.4.0"
+    },
+    {
+      "name": "UnRAR",
+      "type": "haxelib",
+      "version": "1.0.0"
+    },
+    {
+      "name": "away3d",
+      "type": "haxelib",
+      "version": "5.0.9"
+    },
+    {
+      "name": "json2object",
+      "type": "haxelib",
+      "version": "3.11.0"
+    },
+    {
+      "name": "hxjsonast",
+      "type": "haxelib",
+      "version": "1.1.0"
+    },
+    {
+      "name": "flxanimate",
+      "type": "git",
+      "dir": null,
+      "ref": "v4.0.0",
+      "url": "https://github.com/Dot-Stuff/flxanimate"
+    },
+    {
+      "name": "lumod",
+      "type": "haxelib",
+      "version": "2.0.0"
+    },
+    {
+      "name": "actuate",
+      "type": "haxelib",
+      "version": "1.9.0"
+    },
+    {
+      "name": "compiletime",
+      "type": "haxelib",
+      "version": "2.8.0"
+    },
+    {
+      "name": "funkin.vis",
+      "type": "git",
+      "dir": null,
+      "ref": "1966f8fbbbc509ed90d4b520f3c49c084fc92fd6",
+      "url": "https://github.com/FunkinCrew/funkVis"
+    },
+    {
+      "name": "grig.audio",
+      "type": "git",
+      "dir": null,
+      "ref": "162f924bdde427fc84af5b51961d2faef51f6955",
+      "url": "https://github.com/Snirozu/grig.audio"
+    },
+    {
+      "name": "tink_core",
+      "type": "haxelib",
+      "version": "2.1.1"
+    },
+    {
+      "name": "hxvlc",
+      "type": "haxelib",
+      "version": "2.0.1"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+// for quick patches, hooking into classes
+// this can be locally tested with sync.hxs in the game directory
+
+function init() { // initializes the game
+    print("received sync script from git!");
+}
+
+function switchState(state) { // game state gets switched
+    
+}
+
+function openSubState(substate) { // game substate gets opened
+    //print(typeof(substate));
+}

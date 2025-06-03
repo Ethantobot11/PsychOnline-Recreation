@@ -1,0 +1,13 @@
+stage
+stage-erect
+spooky
+spooky-erect
+philly
+philly-erect
+limo
+mall
+mall-erect
+mallEvil
+school
+schoolEvil
+tank

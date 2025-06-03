@@ -1,0 +1,11 @@
+{
+  "buttons": [
+    {
+      "button": "buttonT",
+      "graphic": "t",
+      "x": 1156,
+      "y": 2,
+      "color": "0xA7D2FF"
+    }
+  ]
+}

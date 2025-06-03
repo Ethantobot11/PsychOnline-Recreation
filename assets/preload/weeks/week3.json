@@ -1,0 +1,22 @@
+{
+	"songs": [
+		["Pico", "pico", [148, 22, 83], true, true],
+		["Philly Nice", "pico", [148, 22, 83], true, true],
+		["Blammed", "pico", [148, 22, 83], true, true]
+	],
+
+	"weekCharacters": [
+		"pico",
+		"bf",
+		"gf"
+	],
+	"weekBackground": "philly",
+
+	"storyName": "PICO",
+	"weekBefore": "week2",
+	"weekName": "Week 3",
+	"startUnlocked": true,
+
+	"hideStoryMode": false,
+	"hideFreeplay": false
+}
