@@ -40,6 +40,13 @@ jobs:
         run: |
           haxelib install hmm --quiet
           haxelib run hmm install --quiet
+          
+      - name: Setup Android NDK
+        if: inputs.name == 'Android'
+        uses: nttld/setup-ndk@main
+        id: ndk
+        with:
+          ndk-version: r27c
 
       - name: Install libVLC
         if: inputs.name == 'Linux'
