@@ -40,17 +40,6 @@ jobs:
         run: |
           haxelib install hmm --quiet
           haxelib run hmm install --quiet
-      
-      - name: Setup Android NDK:
-  - uses: actions/checkout@v3
-  - uses: nttld/setup-ndk@v1
-    id: setup-ndk
-    with:
-      ndk-version: r21e
-      add-to-path: false
-  - run: ./build.sh
-    env:
-      ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
       - name: Install libVLC
         if: inputs.name == 'Linux'
