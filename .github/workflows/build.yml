@@ -21,7 +21,7 @@ on:
 
 env:
   HAXE_VERSION: 4.3.6
-  PROJECT_NAME: PsychOnline
+  PROJECT_NAME: PsychOnlineRecreation
 
 jobs:
   build:
@@ -40,7 +40,7 @@ jobs:
         run: |
           haxelib install hmm --quiet
           haxelib run hmm install --quiet
-
+          
       - name: Install libVLC
         if: inputs.name == 'Linux'
         run: sudo apt install libvlc-dev libvlccore-dev
