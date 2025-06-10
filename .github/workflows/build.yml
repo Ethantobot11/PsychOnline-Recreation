@@ -44,14 +44,48 @@ jobs:
       - name: Install libVLC
         if: inputs.name == 'Linux'
         run: sudo apt install libvlc-dev libvlccore-dev
+    
+     - name: Install Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r21e
 
-      - name: Configure Android
-        if: inputs.name == 'Android'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: 11
+
+      - uses: krdlab/setup-haxe@v1
+        with:
+          haxe-version: ${{ env.HAXE_VERSION }}
+
+      - name: Set HAXEPATH
         run: |
-          haxelib run lime config ANDROID_SDK $ANDROID_HOME
-          haxelib run lime config ANDROID_NDK_ROOT ${{ steps.setup-ndk.outputs.ndk-path }}
-          haxelib run lime config JAVA_HOME $JAVA_HOME_17_arm64
-          haxelib run lime config ANDROID_SETUP true
+          echo "HAXEPATH=$HAXE_STD_PATH/.." >> $GITHUB_ENV
+      - name: Install Haxe dependencies
+        run: |
+          curl --output ../hxcpp-4.3.45.zip --location https://github.com/HaxeFoundation/hxcpp/releases/download/v4.3.45/hxcpp-4.3.45.zip
+          haxelib install ../hxcpp-4.3.45.zip --quiet
+          haxelib install format --quiet
+          haxelib install hxp --quiet
+      - name: Enable HXCPP compile cache
+        run: |
+          echo "HXCPP_COMPILE_CACHE=~/.hxcpp" >> $GITHUB_ENV
+      - name: Prepare Lime
+        run: |
+          haxelib dev lime ${{ github.workspace }}
+          haxelib run lime setup -alias -y -nocffi -eval
+      - name: Configure Android support
+        run: |
+          lime config ANDROID_SDK $ANDROID_HOME -eval
+          lime config ANDROID_NDK_ROOT ${{ steps.setup-ndk.outputs.ndk-path }} -eval
+          lime config JAVA_HOME $JAVA_HOME -eval
+          lime config ANDROID_SETUP true -eval
+          lime config -eval
+      - name: Rebuild Lime (Android)
+        run: |
+          lime rebuild android -release -nocolor -verbose -nocffi -eval
 
       - name: Compile
         run: haxelib run lime build ${{ inputs.buildArgs }}
