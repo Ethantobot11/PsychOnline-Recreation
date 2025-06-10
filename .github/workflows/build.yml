@@ -24,7 +24,7 @@ env:
   PROJECT_NAME: PsychOnline
 
 jobs:
-  build: Build
+  build:
     name: Build
     runs-on: ${{ inputs.os }}
     steps:
@@ -44,12 +44,6 @@ jobs:
       - name: Install libVLC
         if: inputs.name == 'Linux'
         run: sudo apt install libvlc-dev libvlccore-dev
-    
-     - name: Install Android NDK
-        uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r21e
           
       - name: Prepare Lime
         run: |
