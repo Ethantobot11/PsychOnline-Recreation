@@ -24,7 +24,7 @@ env:
   PROJECT_NAME: PsychOnline
 
 jobs:
-  build:
+  build: Build
     name: Build
     runs-on: ${{ inputs.os }}
     steps:
