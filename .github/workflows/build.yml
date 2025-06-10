@@ -40,6 +40,8 @@ jobs:
         run: |
           haxelib install hmm --quiet
           haxelib run hmm install --quiet
+          haxelib install actuate 1.8.2 --quiet
+          haxelib run actuate 1.8.2 --quiet
           
       - name: Install libVLC
         if: inputs.name == 'Linux'
@@ -48,19 +50,19 @@ jobs:
       - name: Prepare Lime
         run: |
           haxelib dev lime ${{ github.workspace }}
-          haxelib run lime setup -alias -y -nocffi -eval
-  
+          haxelib run lime setup
+          
       - name: Configure Android support
         run: |
-          lime config ANDROID_SDK $ANDROID_HOME -eval
-          lime config ANDROID_NDK_ROOT ${{ steps.setup-ndk.outputs.ndk-path }} -eval
-          lime config JAVA_HOME $JAVA_HOME -eval
-          lime config ANDROID_SETUP true -eval
-          lime config -eval
+          lime config ANDROID_SDK $ANDROID_HOME 
+          lime config ANDROID_NDK_ROOT ${{ steps.setup-ndk.outputs.ndk-path }} 
+          lime config JAVA_HOME $JAVA_HOME 
+          lime config ANDROID_SETUP true 
+          lime config 
   
       - name: Rebuild Lime (Android)
         run: |
-          lime rebuild android -release -nocolor -verbose -nocffi -eval
+          lime rebuild android
 
       - name: Compile
         run: haxelib run lime build ${{ inputs.buildArgs }}
