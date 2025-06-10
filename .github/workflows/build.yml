@@ -50,12 +50,14 @@ jobs:
         id: setup-ndk
         with:
           ndk-version: r21e
-
+    
+      - name: dunno
       - uses: actions/setup-java@v4
         with:
           distribution: "zulu"
           java-version: 11
-
+     
+      - name : others
       - uses: krdlab/setup-haxe@v1
         with:
           haxe-version: ${{ env.HAXE_VERSION }}
@@ -69,13 +71,16 @@ jobs:
           haxelib install ../hxcpp-4.3.45.zip --quiet
           haxelib install format --quiet
           haxelib install hxp --quiet
+    
       - name: Enable HXCPP compile cache
         run: |
           echo "HXCPP_COMPILE_CACHE=~/.hxcpp" >> $GITHUB_ENV
+  
       - name: Prepare Lime
         run: |
           haxelib dev lime ${{ github.workspace }}
           haxelib run lime setup -alias -y -nocffi -eval
+  
       - name: Configure Android support
         run: |
           lime config ANDROID_SDK $ANDROID_HOME -eval
@@ -83,6 +88,7 @@ jobs:
           lime config JAVA_HOME $JAVA_HOME -eval
           lime config ANDROID_SETUP true -eval
           lime config -eval
+  
       - name: Rebuild Lime (Android)
         run: |
           lime rebuild android -release -nocolor -verbose -nocffi -eval
