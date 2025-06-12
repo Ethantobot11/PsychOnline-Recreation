@@ -41,7 +41,8 @@ jobs:
           haxelib install hmm --quiet
           haxelib run hmm install --quiet
           haxelib install actuate 1.9.0 --quiet
-
+          xcode-select install --quiet
+          
       - name: checkout v4
         uses: actions/checkout@v4
         with:
