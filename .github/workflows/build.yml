@@ -47,21 +47,21 @@ jobs:
         run: sudo apt install libvlc-dev libvlccore-dev
 
           - name: Install Android NDK
-        uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r21e
+            uses: nttld/setup-ndk@v1
+            id: setup-ndk
+           with:
+             ndk-version: r21e
           
       - name: android java 11
-     uses: actions/setup-java@v4
+        uses: actions/setup-java@v4
         with:
           distribution: "zulu"
           java-version: 11
 
     - name: krdlab
-    uses: krdlab/setup-haxe@v1
-        with:
-          haxe-version: ${{ env.HAXE_VERSION }}
+      uses: krdlab/setup-haxe@v1
+      with:
+        haxe-version: ${{ env.HAXE_VERSION }}
 
       - name: Set HAXEPATH
         run: |
