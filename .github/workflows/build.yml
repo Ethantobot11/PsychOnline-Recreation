@@ -59,11 +59,6 @@ jobs:
           distribution: "zulu"
           java-version: 11
 
-      - name: krdlab
-        uses: krdlab/setup-haxe@v1
-        with:
-            haxe-version: ${{ env.HAXE_VERSION }}
-
       - name: Set HAXEPATH
         run: |
           echo "HAXEPATH=$HAXE_STD_PATH/.." >> $GITHUB_ENV
