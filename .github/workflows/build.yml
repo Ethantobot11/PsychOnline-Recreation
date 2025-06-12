@@ -41,19 +41,15 @@ jobs:
           haxelib install hmm --quiet
           haxelib run hmm install --quiet
           haxelib install actuate 1.9.0 --quiet
-          
-     android:
-    runs-on: ubuntu-20.04
-    steps:
 
-      - uses: actions/checkout@v4
+      - name: checkout v4
+        uses: actions/checkout@v4
         with:
          submodules: true
-   
-        - name: android ndk
-          uses: nttld/setup-ndk@v1
-          id: setup-ndk
-          with:
+      - name: android
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
             ndk-version: r21e
           
       - name: android java 11
