@@ -41,7 +41,6 @@ jobs:
           haxelib install hmm --quiet
           haxelib run hmm install --quiet
           haxelib install actuate 1.9.0 --quiet
-          haxelib run actuate 1.9.0 --quiet
            
       - name: Install libVLC
         if: inputs.name == 'Linux'
