@@ -46,11 +46,6 @@ jobs:
         if: inputs.name == 'Linux'
         run: sudo apt install libvlc-dev libvlccore-dev
           
-      - name: Prepare Lime
-        run: |
-          haxelib dev lime ${{ github.workspace }}
-          haxelib run lime setup
-          
       - name: Configure Android support
         run: |
           lime config ANDROID_SDK $ANDROID_HOME 
@@ -58,10 +53,6 @@ jobs:
           lime config JAVA_HOME $JAVA_HOME 
           lime config ANDROID_SETUP true 
           lime config 
-  
-      - name: Rebuild Lime (Android)
-        run: |
-          lime rebuild android
 
       - name: Compile
         run: haxelib run lime build ${{ inputs.buildArgs }}
