@@ -11,11 +11,6 @@
       "version": "8.1.3"
     },
     {
-    "name": "haxelib install actuate",
-    "type": "haxelib",
-    "version": null
-    },
-    {
       "name": "openfl",
       "type": "haxelib",
       "version": "9.3.3"
