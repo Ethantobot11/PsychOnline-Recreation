@@ -41,16 +41,13 @@ jobs:
           haxelib install hmm --quiet
           haxelib run hmm install --quiet
           haxelib install actuate 1.9.0 --quiet
-           
-      - name: Install libVLC
-        if: inputs.name == 'Linux'
-        run: sudo apt install libvlc-dev libvlccore-dev
-
-          - name: Install Android NDK
-            uses: nttld/setup-ndk@v1
-            id: setup-ndk
-           with:
-             ndk-version: r21e
+          
+     
+        - name: android ndk
+          uses: nttld/setup-ndk@v1
+          id: setup-ndk
+          with:
+            ndk-version: r21e
           
       - name: android java 11
         uses: actions/setup-java@v4
