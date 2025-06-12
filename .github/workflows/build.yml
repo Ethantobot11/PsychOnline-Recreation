@@ -51,13 +51,15 @@ jobs:
         id: setup-ndk
         with:
           ndk-version: r21e
-
-      - uses: actions/setup-java@v4
+          
+      - name: android java 11
+     uses: actions/setup-java@v4
         with:
           distribution: "zulu"
           java-version: 11
 
-      - uses: krdlab/setup-haxe@v1
+    - name: krdlab
+    uses: krdlab/setup-haxe@v1
         with:
           haxe-version: ${{ env.HAXE_VERSION }}
 
