@@ -51,11 +51,11 @@ jobs:
             artifactPath: "export/release/ios/build/Release-iphoneos/*.ipa"
     uses: ./.github/workflows/build.yml
     with:
-        name: ${{ matrix.name }}
-        os: ${{ matrix.os }}
-        buildArgs: ${{ matrix.buildArgs }}
-        artifactName: ${{ matrix.artifactName }}
-        artifactPath: ${{ matrix.artifactPath }}
+       name: ${{ matrix.name }}
+       os: ${{ matrix.os }}       
+       buildArgs: ${{ matrix.buildArgs }}
+       artifactName: ${{ matrix.artifactName }}
+       artifactPath: ${{ matrix.artifactPath }}
 
   Releaser:
     needs: [get-commit-hash, build]
