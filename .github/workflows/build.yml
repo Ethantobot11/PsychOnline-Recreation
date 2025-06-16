@@ -20,7 +20,7 @@ on:
         type: string
 
 env:
-  HAXE_VERSION: 4.3.6
+  HAXE_VERSION: 4.3.7
   PROJECT_NAME: PsychOnline
 
 jobs:
@@ -32,111 +32,47 @@ jobs:
         uses: actions/checkout@main
 
       - name: Setup Haxe
+        if: inputs.name != 'Linux ARM64'
         uses: krdlab/setup-haxe@master
         with:
           haxe-version: ${{ env.HAXE_VERSION }}
+
+      - name: Setup Haxe (Linux ARM)
+        if: inputs.name == 'Linux ARM64'
+        run: |
+          sudo add-apt-repository ppa:haxe/releases -y
+          sudo apt update
+          sudo apt-get install -y haxe neko
+          haxelib setup ~/haxelib
+
+      - name: Install libVLC
+        if: contains(inputs.name, 'Linux')
+        run: sudo apt install libvlc-dev libvlccore-dev
+
+      - name: Setup Android NDK
+        if: inputs.name == 'Android'
+        id: setup-ndk
+        uses: nttld/setup-ndk@main
+        with:
+          ndk-version: r27c
+          add-to-path: false
 
       - name: Install Libraries
         run: |
           haxelib install hmm --quiet
           haxelib run hmm install --quiet
-          haxelib install actuate 1.9.0 --quiet
-     
-      - name: android
-        uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-            ndk-version: r21e
-          
-      - name: android java 11
-        uses: actions/setup-java@v4
-        with:
-          distribution: "zulu"
-          java-version: 11
 
-      - name: Set HAXEPATH
+      - name: Configure Android
+        if: inputs.name == 'Android'
         run: |
-          echo "HAXEPATH=$HAXE_STD_PATH/.." >> $GITHUB_ENV
-  
-      - name: Install Haxe dependencies
-        run: |
-          curl --output ../hxcpp-4.3.45.zip --location https://github.com/HaxeFoundation/hxcpp/releases/download/v4.3.45/hxcpp-4.3.45.zip
-          haxelib install ../hxcpp-4.3.45.zip --quiet
-          haxelib install format --quiet
-          haxelib install hxp --quiet
-   
-      - name: Enable HXCPP compile cache
-        run: |
-          echo "HXCPP_COMPILE_CACHE=~/.hxcpp" >> $GITHUB_ENV
- 
-      - name: Prepare Lime
-        run: |
-          haxelib dev lime ${{ github.workspace }}
-          haxelib run lime setup -alias -y -nocffi -eval
-  
-      - name: Configure Android support
-        run: |
-          lime config ANDROID_SDK $ANDROID_HOME -eval
-          lime config ANDROID_NDK_ROOT ${{ steps.setup-ndk.outputs.ndk-path }} -eval
-          lime config JAVA_HOME $JAVA_HOME -eval
-          lime config ANDROID_SETUP true -eval
-          lime config -eval
-  
-      - name: Rebuild Lime (Android)
-        run: |
-          lime rebuild android -release -nocolor -verbose -nocffi -eval
-            - uses: actions/checkout@v4
-        with:
-          submodules: true
+          haxelib run lime config ANDROID_SDK $ANDROID_HOME
+          haxelib run lime config ANDROID_NDK_ROOT ${{ steps.setup-ndk.outputs.ndk-path }}
+          haxelib run lime config JAVA_HOME $JAVA_HOME_17_arm64
+          haxelib run lime config ANDROID_SETUP true
 
-      - uses: krdlab/setup-haxe@v1
-        with:
-          haxe-version: ${{ env.HAXE_VERSION }}
+      - name: Compile
+        run: haxelib run lime build ${{ inputs.buildArgs }}
 
-      - name: Set HAXEPATH
-        run: |
-          echo "HAXEPATH=$HAXE_STD_PATH/.." >> $GITHUB_ENV
-      - name: Install Haxe dependencies
-        run: |
-          curl --output ../hxcpp-4.3.45.zip --location https://github.com/HaxeFoundation/hxcpp/releases/download/v4.3.45/hxcpp-4.3.45.zip
-          haxelib install ../hxcpp-4.3.45.zip --quiet
-          haxelib install format --quiet
-          haxelib install hxp --quiet
-      - name: Enable HXCPP compile cache
-        run: |
-          echo "HXCPP_COMPILE_CACHE=~/.hxcpp" >> $GITHUB_ENV
-      - name: Prepare Lime
-        run: |
-          haxelib dev lime ${{ github.workspace }}
-          haxelib run lime setup -alias -y -nocffi -eval
-      - name: Rebuild Lime (iOS)
-        run: |
-          lime rebuild ios -clean -release -verbose -nocolor -eval
-      - uses: actions/upload-artifact@v4
-        with:
-          name: iPhone-NDLL
-          path: |
-            ndll/iPhone/
-            !**/.gitignore
-          if-no-files-found: error
-
-      - name: Install samples
-        run: |
-          haxelib git lime-samples https://github.com/openfl/lime-samples --quiet
-      # - name: Build HelloWorld sample
-      #   run: |
-      #     lime create HelloWorld -verbose -nocolor -eval
-      #     lime build HelloWorld ios -simulator -release -verbose -nocolor -eval
-
-      - name: Build SimpleImage sample (Simulator)
-        run: |
-          lime create SimpleImage -verbose -nocolor -eval
-          lime build SimpleImage ios -simulator -release -verbose -nocolor -eval
-      - name: Build SimpleAudio sample (Device)
-        run: |
-          lime create SimpleAudio -verbose -nocolor -eval
-          lime build SimpleAudio ios -release -nosign -verbose -nocolor -eval
-          
       - name: Make IPA
         if: inputs.name == 'iOS'
         run: |
