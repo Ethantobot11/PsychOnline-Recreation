@@ -61,6 +61,7 @@ jobs:
         run: |
           haxelib install hmm --quiet
           haxelib run hmm install --quiet
+          haxelib run hmm reinstall 
 
       - name: Configure Android
         if: inputs.name == 'Android'
