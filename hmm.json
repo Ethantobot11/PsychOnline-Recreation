@@ -14,8 +14,10 @@
     },
     {
       "name": "openfl",
-      "type": "haxelib",
-      "version": "9.3.3"
+      "type": "git",
+      "dir": null,
+      "ref": null,
+      "url": "https://github.com/th2l-devs/openfl"
     },
     {
       "name": "flixel",
@@ -145,8 +147,10 @@
     },
     {
       "name": "hxvlc",
-      "type": "haxelib",
-      "version": "2.0.1"
+      "type": "git",
+      "dir": null,
+      "ref": null,
+      "url": "https://github.com/th2l-devs/hxvlc"
     }
   ]
 }
