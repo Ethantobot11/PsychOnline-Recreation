@@ -48,15 +48,7 @@ jobs:
       - name: Install libVLC
         if: contains(inputs.name, 'Linux')
         run: sudo apt install libvlc-dev libvlccore-dev
-
-      - name: Setup Android NDK
-        if: inputs.name == 'Android'
-        id: setup-ndk
-        uses: nttld/setup-ndk@main
-        with:
-          ndk-version: r28b
-          add-to-path: false
-
+        
       - name: Install Libraries
         run: |
           haxelib install hmm --quiet
