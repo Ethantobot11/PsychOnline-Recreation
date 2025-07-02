@@ -78,7 +78,7 @@ jobs:
            path: ${{ github.workspace }}
 
       - name: Move IOS File
-        run: mv /home/runner/${{ env.PROJECT_NAME }}-iOS.ipa ${{ github.workspace }}/${{ env.PROJECT_NAME }}.ipa
+        run:  zip r /home/runner/${{ env.PROJECT_NAME }}-iOS.zip ${{ github.workspace }}/${{ env.PROJECT_NAME }}.ipa
 
       - name: Publish The Release
         uses: softprops/action-gh-release@v2
@@ -88,4 +88,4 @@ jobs:
           prerelease: false
           files: |
             /home/runner/*.apk
-            /home/runner/*.ipa
+            /home/runner/*.zip
