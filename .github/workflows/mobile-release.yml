@@ -77,8 +77,8 @@ jobs:
            name: iOSBuild
            path: ${{ github.workspace }}
 
-      - name: Zip iOS Build For Release
-        run: zip -r /home/runner/${{ env.PROJECT_NAME }}-iOS.ipa ${{ github.workspace }}/${{ env.PROJECT_NAME }}.ipa
+      - name: Move IOS File
+        run: mv /home/runner/${{ env.PROJECT_NAME }}-iOS.ipa ${{ github.workspace }}/${{ env.PROJECT_NAME }}.ipa
 
       - name: Publish The Release
         uses: softprops/action-gh-release@v2
