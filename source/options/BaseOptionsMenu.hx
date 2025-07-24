@@ -93,9 +93,6 @@ class BaseOptionsMenu extends MusicBeatSubstate
 
 		changeSelection();
 		reloadCheckboxes();
-
-		addTouchPad('LEFT_FULL', 'A_B_C');
-		controls.isInSubstate = true;
 	}
 
 	public function addOption(option:Option) {
@@ -118,7 +115,6 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		}
 
 		if (controls.BACK) {
-			controls.isInSubstate = false;
 			close();
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 		}
@@ -212,7 +208,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 				}
 			}
 
-			if(touchPad.buttonC.justPressed || controls.RESET)
+			if(controls.RESET)
 			{
 				var leOption:Option = optionsArray[curSelected];
 				leOption.setValue(leOption.defaultValue);
