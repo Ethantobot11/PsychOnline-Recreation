@@ -13,7 +13,9 @@ import states.MainMenuState;
 import openfl.events.KeyboardEvent;
 import flixel.addons.text.FlxTextField;
 
+#if lumod
 @:build(lumod.LuaScriptClass.build())
+#end
 class OnlineState extends MusicBeatState {
 	var items:FlxTypedSpriteGroup<FlxText>;
 
@@ -87,7 +89,7 @@ class OnlineState extends MusicBeatState {
         super.create();
 
 		if (FlxG.sound.music == null || !FlxG.sound.music.playing)
-			FlxG.sound.playMusic(Paths.music('freakyMenu'));
+			states.TitleState.playFreakyMusic();
 
 		if (online.GameClient.isConnected()) {
 			disableInput = true;
@@ -124,7 +126,7 @@ class OnlineState extends MusicBeatState {
 		warp.makeGraphic(FlxG.width, FlxG.height, FlxColor.TRANSPARENT);
 		warp.updateHitbox();
 		warp.screenCenter();
-		if (!ClientPrefs.data.lowQuality && !ClientPrefs.data.disableOnlineShaders)
+		if (!ClientPrefs.data.lowQuality && ClientPrefs.data.shaders)
 			add(new WarpEffect(warp));
 		warp.antialiasing = ClientPrefs.data.antialiasing;
 		add(warp);
@@ -300,8 +302,6 @@ class OnlineState extends MusicBeatState {
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
 
 		FlxG.mouse.visible = true;
-
-		addTouchPad('NONE', 'B');
     }
 
 	override function destroy() {
@@ -354,7 +354,6 @@ class OnlineState extends MusicBeatState {
 			if (controls.ACCEPT || (FlxG.mouse.justPressed && mouseInItems)) {
 				switch (itms[curSelected].toLowerCase()) {
 					case "join":
-						FlxG.stage.window.textInputEnabled = true;
 						inputWait = true;
 					case "find":
 						disableInput = true;
@@ -572,7 +571,6 @@ class OnlineState extends MusicBeatState {
 			switch (itms[curSelected].toLowerCase()) {
 				case "join":
 					disableInput = true;
-					FlxG.stage.window.textInputEnabled = false;
 					if (daCoomCode.toLowerCase() == "adachi") {
 						FlxG.sound.playMusic(Paths.sound('cabbage'));
 						var image = new FlxSprite().loadGraphic(Paths.image('unnamed_file_from_google'));
@@ -627,6 +625,13 @@ class OnlineState extends MusicBeatState {
 						image.updateHitbox();
 						FreeplayState.destroyFreeplayVocals();
 						add(image);
+						return;
+					}
+					else if (daCoomCode.toLowerCase() == "jackass") {
+						FlxG.sound.play(Paths.sound('jackass')).pitch = FlxG.random.float(0.8, 1.4);
+						disableInput = false;
+						FlxG.sound.music.stop();
+						FreeplayState.destroyFreeplayVocals();
 						return;
 					}
 					GameClient.joinRoom(daCoomCode, onRoomJoin);
