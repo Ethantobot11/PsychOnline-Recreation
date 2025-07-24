@@ -16,8 +16,6 @@ import flixel.ui.FlxButton;
 import openfl.net.FileReference;
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;
-import openfl.events.MouseEvent;
-import openfl.geom.Point;
 import lime.system.Clipboard;
 import tjson.TJSON as Json;
 import objects.Character;
@@ -46,9 +44,6 @@ class CharacterEditorState extends MusicBeatState {
 	var goToSkins:Bool = true;
 	var camFollow:FlxObject;
 
-	var cameraPosition:Point = new Point();
-	var isDragging:Bool = false;
-
 	public function new(daAnim:String = 'spooky', goToPlayState:Bool = true, ?goToSkins:Bool = false) {
 		super();
 		this.daAnim = daAnim;
@@ -72,8 +67,8 @@ class CharacterEditorState extends MusicBeatState {
 
 	override function create() {
 		// FlxG.sound.playMusic(Paths.music('breakfast'), 0.5);
-		if (ClientPrefs.data.cacheOnGPU)
-			Paths.clearStoredMemory();
+		// if (ClientPrefs.data.cacheOnGPU)
+		// 	Paths.clearStoredMemory();
 
 		camEditor = new FlxCamera();
 		camHUD = new FlxCamera();
@@ -138,8 +133,8 @@ class CharacterEditorState extends MusicBeatState {
 		add(healthBar);
 		healthBar.cameras = [camHUD];
 
-		if (ClientPrefs.data.cacheOnGPU)
-			Paths.clearUnusedMemory();
+		// if (ClientPrefs.data.cacheOnGPU)
+		// 	Paths.clearUnusedMemory();
 
 		leHealthIcon = new HealthIcon(char.healthIcon, false, false);
 		leHealthIcon.y = FlxG.height - 150;
@@ -164,15 +159,7 @@ class CharacterEditorState extends MusicBeatState {
 		camFollow.screenCenter();
 		add(camFollow);
 
-		var tipTextArray:Array<String> = (controls.mobileC) ?
-		"X/Y - Camera Zoom In/Out
-		\nZ - Reset Camera Zoom
-		\nV/D - Previous/Next Animation
-		\nArrow Keys - Move Character Offset
-		\nA - Reset Current Offset
-		\nHold C to Move 10x faster\n".split('\n')
-		:
-		"E/Q - Camera Zoom In/Out
+		var tipTextArray:Array<String> = "E/Q - Camera Zoom In/Out
 		\nR - Reset Camera Zoom
 		\nJKLI - Move Camera
 		\nW/S - Previous/Next Animation
@@ -229,16 +216,6 @@ class CharacterEditorState extends MusicBeatState {
 
 		FlxG.mouse.visible = true;
 		reloadCharacterOptions();
-
-		addTouchPad('LEFT_FULL', 'A_B_C_D_V_X_Y_Z');
-		addTouchPadCamera();
-
-		if (controls.mobileC)
-		{
-			FlxG.stage.addEventListener(MouseEvent.MOUSE_DOWN, onMouseEvent);
-			FlxG.stage.addEventListener(MouseEvent.MOUSE_MOVE, onMouseEvent);
-			FlxG.stage.addEventListener(MouseEvent.MOUSE_UP, onMouseEvent);
-		}
 
 		super.create();
 	}
@@ -1184,7 +1161,7 @@ class CharacterEditorState extends MusicBeatState {
 		for (i in 0...directories.length) {
 			var directory:String = directories[i];
 			if (FileSystem.exists(directory)) {
-				for (file in Paths.readDirectory(directory)) {
+				for (file in FileSystem.readDirectory(directory)) {
 					var path = haxe.io.Path.join([directory, file]);
 					if (!sys.FileSystem.isDirectory(path) && file.endsWith('.json')) {
 						var charToCheck:String = file.substr(0, file.length - 5);
@@ -1218,7 +1195,6 @@ class CharacterEditorState extends MusicBeatState {
 		#end
 	}
 
-	var overlapsToButton:Bool = false;
 	override function update(elapsed:Float) {
 		MusicBeatState.camBeat = FlxG.camera;
 		if (char.animationsArray[curAnim] != null) {
@@ -1250,7 +1226,7 @@ class CharacterEditorState extends MusicBeatState {
 		ClientPrefs.toggleVolumeKeys(true);
 
 		if (!charDropDown.dropPanel.visible) {
-			if (touchPad.buttonB.justPressed || FlxG.keys.justPressed.ESCAPE) {
+			if (FlxG.keys.justPressed.ESCAPE) {
 				if (goToSkins) {
 					FlxG.switchState(() -> new SkinsState());
 				}
@@ -1259,24 +1235,24 @@ class CharacterEditorState extends MusicBeatState {
 				}
 				else {
 					FlxG.switchState(() -> new states.editors.MasterEditorMenu());
-					FlxG.sound.playMusic(Paths.music('freakyMenu'));
+					states.TitleState.playFreakyMusic();
 				}
 				FlxG.mouse.visible = false;
 				return;
 			}
 
-			if (touchPad.buttonZ.justPressed || FlxG.keys.justPressed.R) {
+			if (FlxG.keys.justPressed.R) {
 				FlxG.camera.zoom = 1;
 				updateCamPointerZoom();
 			}
 
-			if (touchPad.buttonX.pressed || FlxG.keys.pressed.E && FlxG.camera.zoom < 3) {
+			if (FlxG.keys.pressed.E && FlxG.camera.zoom < 3) {
 				FlxG.camera.zoom += elapsed * FlxG.camera.zoom;
 				if (FlxG.camera.zoom > 3)
 					FlxG.camera.zoom = 3;
 				updateCamPointerZoom();
 			}
-			if (touchPad.buttonY.pressed || FlxG.keys.pressed.Q && FlxG.camera.zoom > 0.1) {
+			if (FlxG.keys.pressed.Q && FlxG.camera.zoom > 0.1) {
 				FlxG.camera.zoom -= elapsed * FlxG.camera.zoom;
 				if (FlxG.camera.zoom < 0.1)
 					FlxG.camera.zoom = 0.1;
@@ -1299,20 +1275,12 @@ class CharacterEditorState extends MusicBeatState {
 					camFollow.x += addToCam;
 			}
 
-			touchPad.forEachAlive((button:TouchButton) ->
-			{
-				if (button.justPressed || button.pressed)
-					overlapsToButton = true;
-				else
-					overlapsToButton = false;
-			});
-
 			if (char.animationsArray.length > 0) {
-				if (touchPad.buttonV.justPressed || FlxG.keys.justPressed.W) {
+				if (FlxG.keys.justPressed.W) {
 					curAnim -= 1;
 				}
 
-				if (touchPad.buttonD.justPressed || FlxG.keys.justPressed.S) {
+				if (FlxG.keys.justPressed.S) {
 					curAnim += 1;
 				}
 
@@ -1322,11 +1290,11 @@ class CharacterEditorState extends MusicBeatState {
 				if (curAnim >= char.animationsArray.length)
 					curAnim = 0;
 
-				if (touchPad.buttonV.justPressed || touchPad.buttonD.justPressed || FlxG.keys.justPressed.S || FlxG.keys.justPressed.W || FlxG.keys.justPressed.SPACE) {
+				if (FlxG.keys.justPressed.S || FlxG.keys.justPressed.W || FlxG.keys.justPressed.SPACE) {
 					char.playAnim(char.animationsArray[curAnim].anim, true);
 					genBoyOffsets();
 				}
-				if (touchPad.buttonA.justPressed || FlxG.keys.justPressed.T) {
+				if (FlxG.keys.justPressed.T) {
 					char.animationsArray[curAnim].offsets = [0, 0];
 
 					char.addOffset(char.animationsArray[curAnim].anim, char.animationsArray[curAnim].offsets[0], char.animationsArray[curAnim].offsets[1]);
@@ -1335,15 +1303,15 @@ class CharacterEditorState extends MusicBeatState {
 				}
 
 				var controlArray:Array<Bool> = [
-					FlxG.keys.justPressed.LEFT || touchPad.buttonLeft.justPressed,
-					FlxG.keys.justPressed.RIGHT || touchPad.buttonRight.justPressed,
-					FlxG.keys.justPressed.UP || touchPad.buttonUp.justPressed,
-					FlxG.keys.justPressed.DOWN || touchPad.buttonDown.justPressed
-			   ];
+					FlxG.keys.justPressed.LEFT,
+					FlxG.keys.justPressed.RIGHT,
+					FlxG.keys.justPressed.UP,
+					FlxG.keys.justPressed.DOWN
+				];
 
 				for (i in 0...controlArray.length) {
 					if (controlArray[i]) {
-						var holdShift = (touchPad.buttonC.pressed || FlxG.keys.pressed.SHIFT);
+						var holdShift = FlxG.keys.pressed.SHIFT;
 						var multiplier = 1;
 						if (holdShift)
 							multiplier = 10;
@@ -1448,17 +1416,12 @@ class CharacterEditorState extends MusicBeatState {
 
 		var data:String = haxe.Json.stringify(json, "\t");
 
-		
 		if (data.length > 0) {
-			#if mobile
-			StorageUtil.saveContent('$daAnim.json', data);
-			#else
 			_file = new FileReference();
 			_file.addEventListener(Event.COMPLETE, onSaveComplete);
 			_file.addEventListener(Event.CANCEL, onSaveCancel);
 			_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 			_file.save(data, daAnim + ".json");
-			#end
 		}
 	}
 
@@ -1468,26 +1431,5 @@ class CharacterEditorState extends MusicBeatState {
 
 		var text:String = prefix + Clipboard.text.replace('\n', '');
 		return text;
-	}
-
-	function onMouseEvent(e:MouseEvent):Void
-	{
-		if (touchPad != null && !touchPad.anyPressed([ANY]))
-			switch (e.type)
-			{
-				case MouseEvent.MOUSE_DOWN:
-					var mouse = new Point(e.stageX, e.stageY); // OpenFL mouse position
-					cameraPosition.x = camFollow.x + mouse.x;
-					cameraPosition.y = camFollow.y + mouse.y;
-					isDragging = true;
-
-				case MouseEvent.MOUSE_MOVE if (isDragging):
-					var mouse = new Point(e.stageX, e.stageY);
-					camFollow.x = cameraPosition.x - mouse.x;
-					camFollow.y = cameraPosition.y - mouse.y;
-
-				case MouseEvent.MOUSE_UP:
-					isDragging = false;
-			}
 	}
 }
