@@ -13,7 +13,7 @@ class ModDownloader {
 	public var client:HTTPClient;
 	public var alert:DownloadAlert;
 
-	public var status(default, set):DownloaderStatus;
+	public var status(default, set):Null<DownloaderStatus>;
 	function set_status(v) {
 		if (onStatus != null)
 			onStatus(v);
@@ -21,7 +21,7 @@ class ModDownloader {
 	}
 	public var onStatus:DownloaderStatus->Void;
 
-	static var downloadDir:String = "";
+	static var downloadDir:String = openfl.filesystem.File.applicationDirectory.nativePath + "/downloads/";
 	var downloadPath:String;
 	var id:String;
 	public var url:String;
@@ -31,7 +31,6 @@ class ModDownloader {
 		id = FileUtils.formatFile(url);
 		downloadPath = downloadDir + id + ".dwl";
 		fileName = FileUtils.formatFile(fileName);
-		downloadDir = #if mobile Sys.getCwd() #else openfl.filesystem.File.applicationDirectory.nativePath #end + "/downloads/";
 
 		for (down in downloaders) {
 			if (down.id == id)
