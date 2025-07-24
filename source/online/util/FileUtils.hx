@@ -21,7 +21,7 @@ class FileUtils {
 	 */
 	public static function removeFiles(path:String) {
 		if (FileSystem.isDirectory(path)) {
-			for (file in Paths.readDirectory(path)) {
+			for (file in FileSystem.readDirectory(path)) {
 				removeFiles(Path.join([path, file]));
 			}
 			FileSystem.deleteDirectory(path);
@@ -39,7 +39,7 @@ class FileUtils {
 			FileSystem.createDirectory(Path.directory(to));
 		
 		if (FileSystem.isDirectory(from)) {
-			for (file in Paths.readDirectory(from)) {
+			for (file in FileSystem.readDirectory(from)) {
 				copyFiles(Path.join([from, file]), Path.join([to, file]));
 			}
 		}
@@ -61,7 +61,7 @@ class FileUtils {
 
 	public static function forEachFile(path:String, callback:(path:String)->Void) {
 		if (FileSystem.isDirectory(path)) {
-			for (file in Paths.readDirectory(path)) {
+			for (file in FileSystem.readDirectory(path)) {
 				forEachFile(Path.join([path, file]), callback);
 			}
 		}
@@ -76,6 +76,9 @@ class FileUtils {
 
 	static final illegalCharacters = ~/[\/|\\|?|*|:|\||"|<|>|.]/;
 
+	/**
+	 * Filters characters that are invalid to a file name
+	 */
 	public static function formatFile(file:String, ?ignoreExtension:Bool = false):String {
 		var filtered = "";
 		var i = -1;
@@ -85,6 +88,13 @@ class FileUtils {
 				filtered += char;
 		}
 		return filtered;
+	}
+
+	/**
+	 * Safe way to join filesystem files/directories (by one item at a time) by filtering invalid characters using `formatFile`
+	 */
+	public static function joinFiles(paths:Array<String>):String {
+		return Path.join([for (path in paths) formatFile(path)]);
 	}
 
 	public static function joinNativePath(paths:Array<String>):String {
