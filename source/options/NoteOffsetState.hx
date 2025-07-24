@@ -413,7 +413,7 @@ class NoteOffsetState extends MusicBeatState
 				}
 			}
 
-			if(touchPad.buttonC.justPressed || controls.RESET)
+			if(controls.RESET)
 			{
 				for (i in 0...getComboOffset().length)
 				{
@@ -451,7 +451,7 @@ class NoteOffsetState extends MusicBeatState
 				updateNoteDelay();
 			}
 
-			if(touchPad.buttonC.justPressed || controls.RESET)
+			if(controls.RESET)
 			{
 				holdTime = 0;
 				barPercent = 0;
@@ -481,7 +481,8 @@ class NoteOffsetState extends MusicBeatState
 				else
 					FlxG.sound.music.volume = 0;
 			}
-			else FlxG.sound.playMusic(Paths.music('freakyMenu'));
+			else
+				states.TitleState.playFreakyMusic();
 			FlxG.mouse.visible = false;
 		}
 
@@ -601,23 +602,14 @@ class NoteOffsetState extends MusicBeatState
 			controllerPointer.visible = controls.controllerMode;
 		}
 
-		removeTouchPad();
-
 		var str:String;
 		var str2:String;
-		if(onComboMenu) {
+		if(onComboMenu)
 			str = 'Combo Offset';
-			addTouchPad('NONE', 'A_B_C');
-			addTouchPadCamera();
-		} else {
+		else
 			str = 'Note/Beat Delay';
-			addTouchPad('LEFT_FULL', 'A_B_C');
-			addTouchPadCamera();
-		}
 
-		if(controls.mobileC)
-			str2 = '(Press A to Switch)';
-		else if(!controls.controllerMode)
+		if(!controls.controllerMode)
 			str2 = '(Press Accept to Switch)';
 		else
 			str2 = '(Press Start to Switch)';
