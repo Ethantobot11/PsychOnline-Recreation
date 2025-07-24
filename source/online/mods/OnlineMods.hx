@@ -317,7 +317,7 @@ class OnlineMods {
 		}
 		else if (/*(gbMod != null ? gbMod.rootCategory == "Executables" : */isExecutable) { // sometimes dum dum people put their non-exe mods to that section
 			trace("Executable mod found! Converting...");
-			for (file in Paths.readDirectory(Paths.mods(modName))) {
+			for (file in FileSystem.readDirectory(Paths.mods(modName))) {
 				if (file != "assets" && file != "mods")
 					FileUtils.removeFiles(Paths.mods(modName + "/" + file));
 			}
@@ -326,7 +326,7 @@ class OnlineMods {
 				FileSystem.deleteFile(Paths.mods(modName + '/mods/pack.json'));
 
 			if (FileSystem.exists(Paths.mods(modName + '/mods'))) {
-				for (file in Paths.readDirectory(Paths.mods(modName + '/mods'))) {
+				for (file in FileSystem.readDirectory(Paths.mods(modName + '/mods'))) {
 					if (FileSystem.isDirectory(Path.join([Paths.mods(modName + '/mods'), file]))
 						&& !Mods.ignoreModFolders.contains(file)) {
 						FileUtils.cut(Path.join([Paths.mods(modName + '/mods'), file]), Paths.mods(modName + "/"));
@@ -383,7 +383,7 @@ class OnlineMods {
 
 			var songsToAdd = [];
 			var diffsToAdd = [];
-			// for (file in Paths.readDirectory(Paths.mods(modName + "/songs"))) {
+			// for (file in FileSystem.readDirectory(Paths.mods(modName + "/songs"))) {
 			// 	if (FileSystem.isDirectory(Path.join([Paths.mods(modName + "/songs"), file]))) {
 			// 		songsToAdd.push(file);
 			// 	}
@@ -478,7 +478,7 @@ class OnlineMods {
 				onSuccess(modName);
 
 			if (modLink == null && !(FlxG.state is PlayState) && checkMods()) {
-				FlxG.sound.playMusic(Paths.music('freakyMenu'));
+				states.TitleState.playFreakyMusic();
 			}
 		});
 	}
