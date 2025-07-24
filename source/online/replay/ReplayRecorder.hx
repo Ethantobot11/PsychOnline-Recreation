@@ -1,6 +1,6 @@
 package online.replay;
 
-import mobile.input.MobileInputID;
+import states.FreeplayState;
 import flixel.input.gamepad.FlxGamepad;
 import online.network.Leaderboard;
 import haxe.crypto.Md5;
@@ -95,29 +95,7 @@ class ReplayRecorder extends FlxBasic {
 		}
 
 		state.add(this);
-
-		var mobileControls:IMobileControls = state.controls.requestedMobileC;
-		if(mobileControls != null)
-		{
-			mobileControls.onButtonDown.add((button:TouchButton, ids:Array<MobileInputID>) -> recordKeyMobileC(Conductor.songPosition, ids, 0));
-			mobileControls.onButtonUp.add((button:TouchButton, ids:Array<MobileInputID>) -> recordKeyMobileC(Conductor.songPosition, ids, 1));
-		}
-		else
-		{
-			trace("Tried to init replay recorder for mobile controls but failed.");
-		}
-
-		var touchPad:TouchPad = state.controls.requestedInstance.touchPad;
-		if(touchPad != null)
-		{
-			touchPad.onButtonDown.add((button:TouchButton, ids:Array<MobileInputID>) -> recordKeyMobileC(Conductor.songPosition, ids, 0));
-			touchPad.onButtonUp.add((button:TouchButton, ids:Array<MobileInputID>) -> recordKeyMobileC(Conductor.songPosition, ids, 1));
-		}
-		else
-		{
-			trace("Tried to init replay recorder for touch pad but failed.");
-		}
-
+        
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, onKeyUp);
 
@@ -151,7 +129,7 @@ class ReplayRecorder extends FlxBasic {
 
 			if (_gamepad != null)
 				for (id => ids in controllerIds) {
-					switch (@:privateAccess _gamepad.buttons[_gamepad.mapping.getRawID(id)].current) {
+					switch (@:privateAccess _gamepad.buttons[_gamepad.mapping.getRawID(id)]?.current) {
 						case JUST_PRESSED:
 							recordKey(Conductor.songPosition, ids, id, 0, false);
 						case JUST_RELEASED:
@@ -187,35 +165,6 @@ class ReplayRecorder extends FlxBasic {
 		}
 	}
 
-	function recordKeyMobileC(time:Float, IDs:Array<MobileInputID>, move:Int) {
-		if (IDs == null || IDs.length < 0)
-			return;
-
-		if(IDs.length == 1 && !REGISTER_BINDS.contains(IDs[0].toString().toLowerCase()))
-		{
-			switch(IDs[0])
-			{
-				case EXTRA_1:
-					data.inputs.push([time, 'KEY:SPACE', move]);
-				case EXTRA_2:
-					data.inputs.push([time, 'KEY:SHIFT', move]);
-				default:
-					// nothing
-			}
-			return;
-		}
-
-		for (id in IDs)
-		{
-			var idName:String = id.toString().toLowerCase();
-
-			if (idName == null || state.paused || !REGISTER_BINDS.contains(idName))
-				continue;
-
-			data.inputs.push([time, idName, move]);
-		}
-	}
-
     public function save():Float {
 		if (!FileSystem.exists("replays/"))
 			FileSystem.createDirectory("replays/");
@@ -238,14 +187,30 @@ class ReplayRecorder extends FlxBasic {
 
 		trace("Saving replay...");
 		var replayData = Json.stringify(data);
-		File.saveContent("replays/MyReplay-" + Paths.formatToSongPath(PlayState.SONG.song) + "-" + Paths.formatToSongPath(Difficulty.getString().toUpperCase()) + "-" + DateTools.format(Date.now(), "%Y-%m-%d_%H'%M'%S") + ".funkinreplay", replayData);
+		File.saveContent(FileUtils.joinFiles([
+			"replays", 
+			"MyReplay-" + PlayState.SONG.song + "-" + Difficulty.getString().toUpperCase() + "-" + DateTools.format(Date.now(), "%Y-%m-%d_%H'%M'%S") + ".funkinreplay"
+		]), replayData);
 		trace("Saved a replay!");
 		
 		if (!ClientPrefs.data.disableSubmiting) {
-			var res = Json.parse(Leaderboard.submitScore(replayData)?.getString() ?? "{}");
-			states.FreeplayState.gainedRanks += res.climbed_ranks ?? 0;
-			if (res.gained_points != null) {
-				return res.gained_points;
+			var response = Leaderboard.submitScore(replayData);
+			final MAX_TRIES = 3;
+			var tries = MAX_TRIES;
+			while (response == null && tries > 0) {
+				tries--;
+				Sys.sleep(1);
+				response = Leaderboard.submitScore(replayData);
+			}
+			if (response != null) {
+				var res = Json.parse(response.getString() ?? "{}");
+				states.FreeplayState.gainedRanks += res.climbed_ranks ?? 0;
+				if (tries < MAX_TRIES) {
+					Alert.alert('Replay Uploaded!', 'After try #' + (MAX_TRIES - tries));
+				}
+				if (res.gained_points != null) {
+					return res.gained_points;
+				}
 			}
 		}
 		return 0;
