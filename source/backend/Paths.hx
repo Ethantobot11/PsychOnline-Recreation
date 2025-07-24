@@ -49,7 +49,6 @@ class Paths
 		'assets/shared/music/tea-time.$SOUND_EXT',
 		'assets/images/bf1.png',
 		'assets/images/bf2.png',
-		'assets/mobile/touchpad/bg.png'
 	];
 	/// haya I love you for the base cache dump I took to the max
 	public static function clearUnusedMemory() {
@@ -120,9 +119,6 @@ class Paths
 			if(FileSystem.exists(modded)) return modded;
 		}
 		#end
-
-		if(library == "mobile")
-			return getPreloadPath('mobile/$file');
 
 		if (library != null)
 			return getLibraryPath(file, library);
@@ -279,15 +275,15 @@ class Paths
 		if (bitmap != null)
 		{
 			localTrackedAssets.push(file);
-			if (allowGPU && ClientPrefs.data.cacheOnGPU)
-			{
-				var texture:RectangleTexture = FlxG.stage.context3D.createRectangleTexture(bitmap.width, bitmap.height, BGRA, true);
-				texture.uploadFromBitmapData(bitmap);
-				bitmap.image.data = null;
-				bitmap.dispose();
-				bitmap.disposeImage();
-				bitmap = BitmapData.fromTexture(texture);
-			}
+			// if (allowGPU /*&& ClientPrefs.data.cacheOnGPU*/)
+			// {
+			// 	var texture:RectangleTexture = FlxG.stage.context3D.createRectangleTexture(bitmap.width, bitmap.height, BGRA, true);
+			// 	texture.uploadFromBitmapData(bitmap);
+			// 	bitmap.image.data = null;
+			// 	bitmap.dispose();
+			// 	bitmap.disposeImage();
+			// 	bitmap = BitmapData.fromTexture(texture);
+			// }
 			var newGraphic:FlxGraphic = FlxGraphic.fromBitmapData(bitmap, false, file);
 			newGraphic.persist = true;
 			newGraphic.destroyOnNoUse = false;
@@ -465,7 +461,7 @@ class Paths
 
 	#if MODS_ALLOWED
 	inline static public function mods(key:String = '') {
-		return #if android StorageUtil.getExternalStorageDirectory() + #else Sys.getCwd() + #end 'mods/' + key;
+		return 'mods/' + key;
 	}
 
 	inline static public function modsFont(key:String) {
@@ -523,7 +519,7 @@ class Paths
 			if(FileSystem.exists(fileToCheck))
 				return fileToCheck;
 		}
-		return #if android StorageUtil.getExternalStorageDirectory() + #else Sys.getCwd() + #end 'mods/' + key;
+		return 'mods/' + key;
 	}
 	#end
 
@@ -595,26 +591,5 @@ class Paths
 		if (spritemapFrames != null)
 			frames.addAtlas(spritemapFrames);
 		return spritemapFrames;
-	}
-
-	public static function readDirectory(directory:String):Array<String>
-	{
-		#if MODS_ALLOWED
-		return FileSystem.readDirectory(directory);
-		#else
-		var dirs:Array<String> = [];
-		for(dir in Assets.list().filter(folder -> folder.startsWith(directory)))
-		{
-			@:privateAccess
-			for(library in lime.utils.Assets.libraries.keys())
-			{
-				if(library != 'default' && Assets.exists('$library:$dir') && (!dirs.contains('$library:$dir') || !dirs.contains(dir)))
-					dirs.push('$library:$dir');
-				else if(Assets.exists(dir) && !dirs.contains(dir))
-					dirs.push(dir);
-			}
-		}
-		return dirs;
-		#end
 	}
 }
