@@ -15,7 +15,9 @@ import objects.AchievementPopup;
 import states.editors.MasterEditorMenu;
 import options.OptionsState;
 
+#if lumod
 @:build(lumod.LuaScriptClass.build())
+#end
 class MainMenuState extends MusicBeatState
 {
 	public static var psychEngineVersion:String = '0.7.1h'; // This is also used for Discord RPC
@@ -174,8 +176,6 @@ class MainMenuState extends MusicBeatState
 		}
 		#end
 
-		addTouchPad('UP_DOWN', 'A_B_E');
-
 		super.create();
 	}
 
@@ -286,14 +286,16 @@ class MainMenuState extends MusicBeatState
 					});
 				}
 			}
-			else if (touchPad.buttonE.justPressed || controls.justPressed('debug_1'))
+			#if desktop
+			else if (controls.justPressed('debug_1'))
 			{
 				selectedSomethin = true;
 				FlxG.switchState(() -> new MasterEditorMenu());
 			}
+			#end
 
 			if (FlxG.mouse.justPressed && updatEBg != null && FlxG.mouse.overlaps(updatEBg)) {
-				online.substates.RequestSubstate.requestURL("https://github.com/Snirozu/Funkin-Psych-Online/releases", true);
+				online.substates.RequestSubstate.requestURL(Main.latestRelease.html_url, true);
 			}
 		}
 
