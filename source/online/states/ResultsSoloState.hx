@@ -11,7 +11,9 @@ import online.states.ResultsSoloState.DA_ANGLE;
 
 // written everything based of my observations :ngNerd:
 
+#if lumod
 @:build(lumod.LuaScriptClass.build())
+#end
 class ResultsSoloState extends MusicBeatState {
     public var data:ResultsData;
 
@@ -64,28 +66,22 @@ class ResultsSoloState extends MusicBeatState {
 		FlxG.cameras.add(camMain, false);
 		FlxG.cameras.setDefaultDrawTarget(camMain, true);
 
-		data.character ??= 'bf';
-
-		if (data.character.endsWith("-player"))
-			data.character = data.character.substring(0, data.character.length - "-player".length);
-
-		if (data.character.endsWith("-pixel"))
-			data.character = data.character.substring(0, data.character.length - "-pixel".length);
-
-		if (data.character.endsWith("-christmas"))
-			data.character = data.character.substring(0, data.character.length - "-christmas".length);
-
 		FlxG.sound.destroy(true);
 
 		Mods.loadTopMod();
-		
+
+		data.character ??= 'bf';
 		var curSkin = ClientPrefs.data.modSkin ?? [null, null];
-		if (data.character == curSkin[0])
+		if (data.character.startsWith(curSkin[1])) {
+			data.character = curSkin[1];
 			Mods.currentModDirectory = curSkin[0];
+		}
 
 		var charData:Dynamic = ShitUtil.getJson('characters_results/${data.character}');
-		if (charData == null)
-			charData = ShitUtil.getJson('characters_results/bf');
+		if (charData == null) {
+			data.character = 'bf';
+			charData = ShitUtil.getJson('characters_results/${data.character}');
+		}
 
 		var rankString = 'LOSS';
 		var rank = charData.SHIT;
@@ -397,7 +393,7 @@ class ResultsSoloState extends MusicBeatState {
 			songText.setPosition(FlxG.width, 85);
 		}
 
-		if (FlxG.sound.music != null && !exiting && (controls.ACCEPT || controls.BACK) || TouchUtil.justPressed) {
+		if (FlxG.sound.music != null && !exiting && (controls.ACCEPT || controls.BACK)) {
 			exiting = true;
 			FlxTimer.globalManager.clear();
 			FlxTween.globalManager.clear();
