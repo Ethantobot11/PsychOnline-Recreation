@@ -110,8 +110,6 @@ class WeekEditorState extends MusicBeatState
 
 		FlxG.mouse.visible = true;
 
-		addTouchPad("UP_DOWN", "B");
-
 		super.create();
 	}
 
@@ -438,9 +436,9 @@ class WeekEditorState extends MusicBeatState
 
 		if(!blockInput) {
 			ClientPrefs.toggleVolumeKeys(true);
-			if(FlxG.keys.justPressed.ESCAPE || touchPad.buttonB.justPressed) {
+			if(FlxG.keys.justPressed.ESCAPE) {
 				FlxG.switchState(() -> new MasterEditorMenu());
-				FlxG.sound.playMusic(Paths.music('freakyMenu'));
+				states.TitleState.playFreakyMusic();
 			}
 		}
 
@@ -530,15 +528,11 @@ class WeekEditorState extends MusicBeatState
 		var data:String = haxe.Json.stringify(weekFile, "\t");
 		if (data.length > 0)
 		{
-			#if mobile
-			StorageUtil.saveContent('$weekFileName.json', data);
-			#else
 			_file = new FileReference();
 			_file.addEventListener(Event.COMPLETE, onSaveComplete);
 			_file.addEventListener(Event.CANCEL, onSaveCancel);
 			_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 			_file.save(data, weekFileName + ".json");
-			#end
 		}
 	}
 	
@@ -623,7 +617,6 @@ class WeekEditorFreeplayState extends MusicBeatState
 
 		addEditorBox();
 		changeSelection();
-		addTouchPad("UP_DOWN", "B");
 		super.create();
 	}
 	
@@ -802,9 +795,9 @@ class WeekEditorFreeplayState extends MusicBeatState
 			}
 		} else {
 			ClientPrefs.toggleVolumeKeys(true);
-			if(FlxG.keys.justPressed.ESCAPE || touchPad.buttonB.justPressed) {
+			if(FlxG.keys.justPressed.ESCAPE) {
 				FlxG.switchState(() -> new MasterEditorMenu());
-				FlxG.sound.playMusic(Paths.music('freakyMenu'));
+				states.TitleState.playFreakyMusic();
 			}
 
 			if(controls.UI_UP_P) changeSelection(-1);
