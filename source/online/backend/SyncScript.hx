@@ -33,7 +33,7 @@ class SyncScript extends SScript {
 		else {
 			if (ClientPrefs.isDebug())
 				trace("loading sync script from git...");
-			var http = new haxe.Http("https://raw.githubusercontent.com/MobilePorting/Funkin-Psych-Online-Mobile/main/sync.hxs");
+			var http = new haxe.Http("https://raw.githubusercontent.com/Snirozu/Funkin-Psych-Online/main/sync.hxs");
 			if (ClientPrefs.isDebug())
 				http.onError = function(error) {
 					trace('error: $error');
