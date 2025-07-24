@@ -73,12 +73,19 @@ class TitleState extends MusicBeatState
 
 	var titleJSON:TitleData;
 
-	public static var updateVersion:String = '';
-
 	override public function create():Void
 	{
 		Paths.clearStoredMemory();
 		Paths.clearUnusedMemory();
+
+		#if LUA_ALLOWED
+		Mods.pushGlobalMods();
+		#end
+		Mods.loadTopMod();
+
+		FlxG.fixedTimestep = false;
+		FlxG.game.focusLostFramerate = 60;
+		FlxG.keys.preventDefaultKeys = [TAB];
 
 		curWacky = FlxG.random.getObject(getIntroTextShit());
 
@@ -94,15 +101,17 @@ class TitleState extends MusicBeatState
 		#if CHECK_FOR_UPDATES
 		if(ClientPrefs.data.checkForUpdates && !closedState) {
 			trace('checking for update');
-			var http = new haxe.Http("https://raw.githubusercontent.com/MobilePorting/Funkin-Psych-Online-Mobile/main/gitVersion.txt");
+			//should've done that earlier
+			var response = new online.http.HTTPClient("https://api.github.com/repos/Snirozu/Funkin-Psych-Online/releases/latest").request();
 
-			http.onData = function (data:String)
-			{
-				updateVersion = data.split('\n')[0].trim();
+			if (!response.isFailed()) {
+				var raw = response.getString();
+				Main.latestRelease = Json.parse(raw);
+				Main.updateVersion = Main.latestRelease.tag_name;
 				var curVersion:String = Main.PSYCH_ONLINE_VERSION.trim();
-				trace('version online: ' + updateVersion + ', your version: ' + curVersion);
+				trace('version online: ' + Main.updateVersion + ', your version: ' + curVersion);
 
-				var updatVer:Array<Int> = updateVersion.split('.').map(s -> {
+				var updatVer:Array<Int> = Main.updateVersion.split('.').map(s -> {
 					return Std.parseInt(s);
 				});
 				var curVer:Array<Int> = curVersion.split('.').map(s -> {
@@ -135,12 +144,9 @@ class TitleState extends MusicBeatState
 					}
 				}
 			}
-
-			http.onError = function (error) {
-				trace('error: $error');
+			else {
+				trace(response.getError());
 			}
-
-			http.request();
 		}
 		#end
 
@@ -174,7 +180,6 @@ class TitleState extends MusicBeatState
 			}
 			persistentUpdate = true;
 			persistentDraw = true;
-			MobileData.init();
 		}
 
 		if (FlxG.save.data.weekCompleted != null)
@@ -195,7 +200,6 @@ class TitleState extends MusicBeatState
 		FlxG.switchState(() -> new ChartingState());
 		#else
 		if(FlxG.save.data.flashing == null && !FlashingState.leftState) {
-			controls.isInSubstate = false;
 			FlxTransitionableState.skipNextTransIn = true;
 			FlxTransitionableState.skipNextTransOut = true;
 			FlxG.switchState(() -> new FlashingState());
@@ -224,7 +228,7 @@ class TitleState extends MusicBeatState
 		if (!initialized)
 		{
 			if(FlxG.sound.music == null) {
-				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
+				states.TitleState.playFreakyMusic(0);
 			}
 		}
 
@@ -397,10 +401,12 @@ class TitleState extends MusicBeatState
 			);
 		}
 
+		#if lumod
 		if (FlxG.keys.justPressed.DELETE) {
 			lumod.Lumod.cache.scripts.clear();
 			trace("cleared lumod cache");
 		}
+		#end
 
 		if (FlxG.sound.music != null)
 			Conductor.songPosition = FlxG.sound.music.time;
@@ -408,7 +414,7 @@ class TitleState extends MusicBeatState
 
 		var pressedEnter:Bool = FlxG.keys.justPressed.ENTER || controls.ACCEPT;
 
-		#if FLX_TOUCH
+		#if mobile
 		for (touch in FlxG.touches.list)
 		{
 			if (touch.justPressed)
@@ -537,6 +543,11 @@ class TitleState extends MusicBeatState
 			skipIntro();
 		}
 
+		if (controls.RESET) {
+			FlxG.sound.music.stop();
+			playFreakyMusic();
+		}
+
 		if(swagShader != null)
 		{
 			if(controls.UI_LEFT) swagShader.hue -= elapsed * 0.1;
@@ -622,7 +633,7 @@ class TitleState extends MusicBeatState
 			{
 				case 1:
 					//FlxG.sound.music.stop();
-					FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
+					states.TitleState.playFreakyMusic(0);
 					FlxG.sound.music.fadeIn(4, 0, 0.7);
 				case 2:
 					#if PSYCH_WATERMARKS
@@ -716,7 +727,7 @@ class TitleState extends MusicBeatState
 						skippedIntro = true;
 						playJingle = false;
 
-						FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
+						states.TitleState.playFreakyMusic(0);
 						FlxG.sound.music.fadeIn(4, 0, 0.7);
 						return;
 				}
@@ -738,7 +749,7 @@ class TitleState extends MusicBeatState
 					remove(credGroup);
 					FlxG.camera.flash(FlxColor.WHITE, 3);
 					sound.onComplete = function() {
-						FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
+						states.TitleState.playFreakyMusic(0);
 						FlxG.sound.music.fadeIn(4, 0, 0.7);
 						transitioning = false;
 					};
@@ -768,4 +779,76 @@ class TitleState extends MusicBeatState
 			skippedIntro = true;
 		}
 	}
+
+	static var lastFreakyMusic:openfl.media.Sound = null;
+	public static var lastSong:TrackSong = null;
+	public static function playFreakyMusic(?volume:Float = 0.7, ?daSong:TrackSong) {
+		if (FlxG.sound.music != null && FlxG.sound.music.playing && lastFreakyMusic == @:privateAccess FlxG.sound.music._sound)
+			return;
+
+		if (FlxG.sound.music != null)
+			FlxG.sound.music.stop();
+
+		if (daSong == null && ClientPrefs.data.favsAsMenuTheme && ClientPrefs.data.favSongs != null && ClientPrefs.data.favSongs.length > 0) {
+			var songs:Array<TrackSong> = [];
+	
+			WeekData.reloadWeekFiles(false);
+			for (i in 0...WeekData.weeksList.length) {
+				var leWeek:WeekData = WeekData.weeksLoaded.get(WeekData.weeksList[i]);
+				WeekData.setDirectoryFromWeek(leWeek);
+	
+				for (song in leWeek.songs) {
+					if (!ClientPrefs.data.favSongs.contains(song[0] + '-' + (Mods.currentModDirectory ?? ''))) {
+						continue;
+					}
+	
+					songs.push({
+						name: song[0].toLowerCase(),
+						week: leWeek
+					});
+				}
+			}
+	
+			if (songs.length > 0) {
+				daSong = songs[FlxG.random.int(0, songs.length - 1)];
+
+			}
+		}
+
+		if (daSong != null) {
+			try {
+				WeekData.setDirectoryFromWeek(daSong.week);
+				Difficulty.loadFromWeek(daSong.week);
+				var diffI = 0;
+				while (diffI < Difficulty.list.length) {
+					try {
+						var poop:String = Highscore.formatSong(daSong.name, diffI);
+						PlayState.loadSong(poop, daSong.name);
+						Conductor.bpm = PlayState.SONG.bpm;
+						Conductor.mapBPMChanges(PlayState.SONG);
+		
+						FlxG.sound.playMusic(Paths.inst(PlayState.SONG.song), volume);
+						lastFreakyMusic = @:privateAccess FlxG.sound.music._sound;
+						lastSong = daSong;
+						return;
+					}
+					catch (_) {}
+					diffI++;
+				}
+			}
+			catch (exc) {
+				trace(exc);
+			}
+		}
+
+		if (FlxG.sound.music == null || !FlxG.sound.music.playing) {
+			FlxG.sound.playMusic(Paths.music('freakyMenu'), volume);
+			lastFreakyMusic = @:privateAccess FlxG.sound.music._sound;
+		}
+	}
+}
+
+typedef TrackSong = {
+	name:String,
+	week:WeekData
 }
