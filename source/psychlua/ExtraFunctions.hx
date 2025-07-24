@@ -24,47 +24,30 @@ class ExtraFunctions
 		var lua:State = funk.lua;
 		
 		// Keyboard & Gamepads
-		funk.set("keyboardJustPressed", function(name:String) {
-			switch (name.toUpperCase()) {
-				case 'SPACE':
-					var space = Reflect.getProperty(FlxG.keys.justPressed, 'SPACE');
-					var mobileShit:Bool = false;
-					if (Controls.instance.mobileC)
-						if (MusicBeatState.getState().mobileControls != null)
-							mobileShit = MusicBeatState.getState().mobileControls.buttonExtra.justPressed;
-					return space || mobileShit;
-
-				default:
-					return Reflect.getProperty(FlxG.keys.justPressed, name.toUpperCase());
+		Lua_helper.add_callback(lua, "keyboardJustPressed", luaJustPressed = function(name:String)
+		{
+			if (Controls.instance?.moodyBlues != null && Controls.instance.moodyBlues.pressedKeys.get('KEY:' + name) == JUST_PRESSED) {
+				return true;
 			}
+			return Reflect.getProperty(FlxG.keys.justPressed, name);
 		});
-		funk.set("keyboardPressed", function(name:String) {
-			switch (name.toUpperCase()) {
-				case 'SPACE':
-					var space = Reflect.getProperty(FlxG.keys.pressed, 'SPACE');
-					var mobileShit:Bool = false;
-					if (Controls.instance.mobileC)
-						if (MusicBeatState.getState().mobileControls != null)
-							mobileShit = MusicBeatState.getState().mobileControls.buttonExtra.pressed;
-					return space || mobileShit;
-
-				default:
-					return Reflect.getProperty(FlxG.keys.pressed, name.toUpperCase());
+		Lua_helper.add_callback(lua, "keyboardPressed", luaPressed = function(name:String)
+		{
+			if (Controls.instance?.moodyBlues != null) {
+				var status = Controls.instance?.moodyBlues.pressedKeys.get('KEY:' + name);
+				if (status == PRESSED || status == JUST_PRESSED)
+					return true;
 			}
+			return Reflect.getProperty(FlxG.keys.pressed, name);
 		});
-		funk.set("keyboardReleased", function(name:String) {
-			switch (name.toUpperCase()) {
-				case 'SPACE':
-					var space = Reflect.getProperty(FlxG.keys.justReleased, 'SPACE');
-					var mobileShit:Bool = false;
-					if (Controls.instance.mobileC)
-						if (MusicBeatState.getState().mobileControls != null)
-							mobileShit = MusicBeatState.getState().mobileControls.buttonExtra.justReleased;
-					return space || mobileShit;
-
-				default:
-					return Reflect.getProperty(FlxG.keys.justReleased, name.toUpperCase());
+		Lua_helper.add_callback(lua, "keyboardReleased", luaJustReleased = function(name:String)
+		{
+			if (Controls.instance?.moodyBlues != null) {
+				var status = Controls.instance?.moodyBlues.pressedKeys.get('KEY:' + name);
+				if (status == JUST_RELEASED)
+					return true;
 			}
+			return Reflect.getProperty(FlxG.keys.justReleased, name);
 		});
 
 		Lua_helper.add_callback(lua, "anyGamepadJustPressed", function(name:String)
@@ -133,12 +116,6 @@ class ExtraFunctions
 				case 'down': return PlayState.instance.controls.NOTE_DOWN_P;
 				case 'up': return PlayState.instance.controls.NOTE_UP_P;
 				case 'right': return PlayState.instance.controls.NOTE_RIGHT_P;
-				case 'space':
-					var mobileShit:Bool = false;
-					if (Controls.instance.mobileC)
-						if (MusicBeatState.getState().mobileControls != null)
-							mobileShit = MusicBeatState.getState().mobileControls.buttonExtra.justPressed;
-					return PlayState.instance.controls.justPressed('space') || mobileShit;
 				default: return PlayState.instance.controls.justPressed(name);
 			}
 			return false;
@@ -150,12 +127,6 @@ class ExtraFunctions
 				case 'down': return PlayState.instance.controls.NOTE_DOWN;
 				case 'up': return PlayState.instance.controls.NOTE_UP;
 				case 'right': return PlayState.instance.controls.NOTE_RIGHT;
-				case 'space':
-					var mobileShit:Bool = false;
-					if (Controls.instance.mobileC)
-						if (MusicBeatState.getState().mobileControls != null)
-							mobileShit = MusicBeatState.getState().mobileControls.buttonExtra.pressed;
-					return PlayState.instance.controls.pressed('space') || mobileShit;
 				default: return PlayState.instance.controls.pressed(name);
 			}
 			return false;
@@ -167,12 +138,6 @@ class ExtraFunctions
 				case 'down': return PlayState.instance.controls.NOTE_DOWN_R;
 				case 'up': return PlayState.instance.controls.NOTE_UP_R;
 				case 'right': return PlayState.instance.controls.NOTE_RIGHT_R;
-				case 'space':
-					var mobileShit:Bool = false;
-					if (Controls.instance.mobileC)
-						if (MusicBeatState.getState().mobileControls != null)
-							mobileShit = MusicBeatState.getState().mobileControls.buttonExtra.justReleased;
-					return PlayState.instance.controls.justReleased('space') || mobileShit;
 				default: return PlayState.instance.controls.justReleased(name);
 			}
 			return false;
@@ -188,7 +153,7 @@ class ExtraFunctions
 				PlayState.instance.modchartSaves.set(name, save);
 				return;
 			}
-			FunkinLua.luaTrace('initSaveData: Save file already initialized: ' + name);
+			funk.luaTrace('initSaveData: Save file already initialized: ' + name);
 		});
 		Lua_helper.add_callback(lua, "flushSaveData", function(name:String) {
 			if(PlayState.instance.modchartSaves.exists(name))
@@ -196,7 +161,7 @@ class ExtraFunctions
 				PlayState.instance.modchartSaves.get(name).flush();
 				return;
 			}
-			FunkinLua.luaTrace('flushSaveData: Save file not initialized: ' + name, false, false, FlxColor.RED);
+			funk.luaTrace('flushSaveData: Save file not initialized: ' + name, false, false, FlxColor.RED);
 		});
 		Lua_helper.add_callback(lua, "getDataFromSave", function(name:String, field:String, ?defaultValue:Dynamic = null) {
 			if(PlayState.instance.modchartSaves.exists(name))
@@ -207,7 +172,7 @@ class ExtraFunctions
 				else
 					return defaultValue;
 			}
-			FunkinLua.luaTrace('getDataFromSave: Save file not initialized: ' + name, false, false, FlxColor.RED);
+			funk.luaTrace('getDataFromSave: Save file not initialized: ' + name, false, false, FlxColor.RED);
 			return defaultValue;
 		});
 		Lua_helper.add_callback(lua, "setDataFromSave", function(name:String, field:String, value:Dynamic) {
@@ -216,7 +181,7 @@ class ExtraFunctions
 				Reflect.setField(PlayState.instance.modchartSaves.get(name).data, field, value);
 				return;
 			}
-			FunkinLua.luaTrace('setDataFromSave: Save file not initialized: ' + name, false, false, FlxColor.RED);
+			funk.luaTrace('setDataFromSave: Save file not initialized: ' + name, false, false, FlxColor.RED);
 		});
 
 		// File management
@@ -253,7 +218,7 @@ class ExtraFunctions
 
 				return true;
 			} catch (e:Dynamic) {
-				FunkinLua.luaTrace("saveFile: Error trying to save " + path + ": " + e, false, false, FlxColor.RED);
+				funk.luaTrace("saveFile: Error trying to save " + path + ": " + e, false, false, FlxColor.RED);
 			}
 			return false;
 		});
@@ -279,7 +244,7 @@ class ExtraFunctions
 					return true;
 				}
 			} catch (e:Dynamic) {
-				FunkinLua.luaTrace("deleteFile: Error trying to delete " + path + ": " + e, false, false, FlxColor.RED);
+				funk.luaTrace("deleteFile: Error trying to delete " + path + ": " + e, false, false, FlxColor.RED);
 			}
 			return false;
 		});
@@ -290,7 +255,7 @@ class ExtraFunctions
 			var list:Array<String> = [];
 			#if sys
 			if(FileSystem.exists(folder)) {
-				for (folder in Paths.readDirectory(folder)) {
+				for (folder in FileSystem.readDirectory(folder)) {
 					if (!list.contains(folder)) {
 						list.push(folder);
 					}
