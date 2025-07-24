@@ -11,24 +11,16 @@ class VerifyCodeSubstate extends MusicBeatSubstate {
 
     var onEnter:String->Void;
 	var blurFilter:BlurFilter;
-	var blackSprite:FlxSprite;
 	var coolCam:FlxCamera;
 
     override function create() {
         super.create();
 
-		if (!ClientPrefs.data.disableOnlineShaders) {
-			blurFilter = new BlurFilter();
-			for (cam in FlxG.cameras.list) {
-				if (cam.filters == null)
-					cam.filters = [];
-				cam.filters.push(blurFilter);
-			}
-		} else {
-			blackSprite = new FlxSprite();
-			blackSprite.makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
-			blackSprite.alpha = 0.75;
-			add(blackSprite);
+		blurFilter = new BlurFilter();
+		for (cam in FlxG.cameras.list) {
+			if (cam.filters == null)
+				cam.filters = [];
+			cam.filters.push(blurFilter);
 		}
 
 		coolCam = new FlxCamera();
@@ -43,9 +35,14 @@ class VerifyCodeSubstate extends MusicBeatSubstate {
 		bg.scrollFactor.set(0, 0);
 		add(bg);
 
-		var title = new FlxText(0, 0, FlxG.width, 'A Verification Code has been sent to your email box!\nEnter it here after you receive it!');
+		var title = new FlxText(0, 0, FlxG.width, 
+			'A Verification Code may have been sent to this email!\n' + 
+			'Please note, that the server will not tell you if this email is registered!\n' + 
+			'If you can\'t find it, check your spam inbox.\n' + 
+			'Enter it here, if you receive it!'
+		);
 		title.setFormat("VCR OSD Mono", 24, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		title.y = FlxG.height / 2 - title.height / 2 - 150;
+		title.y = FlxG.height / 2 - title.height / 2 - 200;
 		title.scrollFactor.set();
 		add(title);
 
@@ -62,13 +59,10 @@ class VerifyCodeSubstate extends MusicBeatSubstate {
 	override function destroy() {
 		super.destroy();
 
-		if (!ClientPrefs.data.disableOnlineShaders) {
-			for (cam in FlxG.cameras.list) {
-				if (cam?.filters != null)
-					cam.filters.remove(blurFilter);
-			}
-		} else
-			blackSprite.destroy();
+		for (cam in FlxG.cameras.list) {
+			if (cam?.filters != null)
+				cam.filters.remove(blurFilter);
+		}
 		FlxG.cameras.remove(coolCam);
 	}
 
