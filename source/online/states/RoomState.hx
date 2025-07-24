@@ -2,7 +2,6 @@ package online.states;
 
 import flixel.util.FlxStringUtil;
 import states.stages.Spooky;
-import lumod.Lumod;
 import flixel.util.FlxAxes;
 import flixel.addons.display.FlxPieDial;
 import sys.FileSystem;
@@ -23,7 +22,9 @@ import states.FreeplayState;
 import states.ModsMenuState;
 import openfl.utils.Assets as OpenFlAssets;
 
+#if lumod
 @:build(lumod.LuaScriptClass.build())
+#end
 @:publicFields
 class RoomState extends MusicBeatState {
 	//this shit is messy
@@ -88,8 +89,6 @@ class RoomState extends MusicBeatState {
 		super();
 
 		instance = this;
-
-		registerMessages();
 
 		playMusic((GameClient.isOwner ? GameClient.room.state.player1 : GameClient.room.state.player2).hasSong);
 		(GameClient.isOwner ? GameClient.room.state.player1 : GameClient.room.state.player2).listen("hasSong", (value:Bool, prev) -> {
@@ -543,9 +542,7 @@ class RoomState extends MusicBeatState {
 
 		GameClient.send("status", "In the Lobby");
 
-		addTouchPad('LEFT_FULL', 'B_C_Y_T_M');
-		addTouchPadCamera();
-		touchPad.y -= 300;
+		registerMessages();
 	}
 
 	var hasStage:Bool = false;
@@ -713,11 +710,13 @@ class RoomState extends MusicBeatState {
 			GameClient.reconnect();
 		}
 
+		#if lumod
 		if (FlxG.keys.justPressed.F12) {
 			trace('reloading lumod');
 			Lumod.cache.scripts.clear();
 			lmLoad();
 		}
+		#end
 		
 		if (!GameClient.isConnected())
 			return;
@@ -830,8 +829,8 @@ class RoomState extends MusicBeatState {
 
 			// trace('playerHold = ' + playerHold + ', oppHold = ' + oppHold);
 
-			if (touchPad.buttonY.pressed || FlxG.keys.pressed.ALT) { // useless, but why not?
-				var suffix = (touchPad.buttonM.pressed || FlxG.keys.pressed.CONTROL) ? 'miss' : '';
+			if (FlxG.keys.pressed.ALT) { // useless, but why not?
+				var suffix = FlxG.keys.pressed.CONTROL ? 'miss' : '';
 				if (controls.NOTE_LEFT_P) {
 					playerAnim('singLEFT' + suffix);
 				}
@@ -874,7 +873,7 @@ class RoomState extends MusicBeatState {
 			danceLogic(p1);
 			danceLogic(p2);
 			
-			if (((!FlxG.keys.pressed.ALT || !touchPad.buttonY.pressed) && controls.ACCEPT) || FlxG.mouse.justPressed) {
+			if ((!FlxG.keys.pressed.ALT && controls.ACCEPT) || FlxG.mouse.justPressed) {
 				switch (curSelected) {
 					case 0:
 						openSubState(new RoomSettingsSubstate());
@@ -968,8 +967,6 @@ class RoomState extends MusicBeatState {
 			loadCharacter(false, true, true);
 		}
 
-		touchPad.buttonLeft.visible = touchPad.buttonRight.visible = touchPad.buttonUp.visible = touchPad.buttonDown.visible = touchPad.buttonT.visible = touchPad.buttonM.visible = touchPad.buttonY.pressed;
-
         super.update(elapsed);
 
 		if (FlxG.sound.music != null)
@@ -1041,7 +1038,7 @@ class RoomState extends MusicBeatState {
 					Alert.alert("Mod couldn't be found!", "Host didn't specify the URL of this mod");
 				}
 				else if (Mods.getModDirectories().contains(GameClient.room.state.modDir)) {
-					Alert.alert("Mod couldn't be found!", "Expected mod data to exist in this path: " + (GameClient.room.state.modDir ?? #if android StorageUtil.getExternalStorageDirectory() + #else Sys.getCwd() + #end "mods/"));
+					Alert.alert("Mod couldn't be found!", "Expected mod data to exist in this path: " + (GameClient.room.state.modDir ?? "mods/"));
 				}
 				var sond = FlxG.sound.play(Paths.sound('badnoise' + FlxG.random.int(1, 3)));
 				sond.pitch = 1.1;
@@ -1151,27 +1148,21 @@ class RoomState extends MusicBeatState {
 
 		positionCharacters();
 
-		final settingsBind:String = !controls.mobileC ? "\n\n(Keybind: SHIFT)" : "";
-		final chatBind:String = !controls.mobileC ? "\n\n(Keybind: TAB)" : "";
-		final roomBind:String = !controls.mobileC ? "\n\nACCEPT - Reveals the code and\ncopies it to your clipboard.\n\nCTRL + C - Copies the code without\nrevealing it on the screen." : "\n\nTOUCH - Reveals the code and\ncopies it to your clipboard.";
-		final modBind:String = !controls.mobileC ? "\n\nRIGHT CLICK - Open Mod Downloader" : "\n\nTOUCH - Open Mod Downloader";
-		final lobbyBind:String = !controls.mobileC ? "\nPress UI keybinds\nor use your mouse\nto select an option!" : "\nTouch UI keybinds\nto select an option!";
-
 		switch (curSelected) {
 			case 0:
-				itemTip.text = " - SETTINGS - \nOpens server settings." + settingsBind;
+				itemTip.text = " - SETTINGS - \nOpens server settings.\n\n(Keybind: SHIFT)";
 			case 1:
-				itemTip.text = " - CHAT - \nOpens chat." + chatBind;
+				itemTip.text = " - CHAT - \nOpens chat.\n\n(Keybind: TAB)";
 			case 2:
 				itemTip.text = " - START GAME/READY - \nToggles your READY status.\n\nPlayers also need to have the\ncurrently selected mod installed.\n\nTwo players are required to start.";
 			case 3:
-				itemTip.text = " - ROOM CODE - \nUnique code of this room." + roomBind;
+				itemTip.text = " - ROOM CODE - \nUnique code of this room.\n\nACCEPT - Reveals the code and\ncopies it to your clipboard.\n\nCTRL + C - Copies the code without\nrevealing it on the screen.";
 			case 4:
 				itemTip.text = " - SELECT SONG - \nSelects the song.\n\n(Players with host permissions\ncan only do that)";
 			case 5:
-				itemTip.text = " - MOD - \nDownloads the currently selected mod\nif it isn't installed.\n\nAfter you install it\npress this button again!" + modBind;
+				itemTip.text = " - MOD - \nDownloads the currently selected mod\nif it isn't installed.\n\nAfter you install it\npress this button again!\n\nRIGHT CLICK - Open Mod Downloader";
 			default:
-				itemTip.text = " - LOBBY - " + lobbyBind;
+				itemTip.text = " - LOBBY - \nPress UI keybinds\nor use your mouse\nto select an option!";
 		}
 
 		itemTip.x = settingsIconBg.x + settingsIconBg.width - itemTip.width;
@@ -1245,7 +1236,7 @@ class RoomState extends MusicBeatState {
 			Conductor.bpm = PlayState.SONG.bpm;
 		}
 		else {
-			FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.5);
+			states.TitleState.playFreakyMusic(0.5);
 			Conductor.bpm = 102;
 		}
 	}
