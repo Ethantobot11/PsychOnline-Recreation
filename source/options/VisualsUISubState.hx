@@ -142,27 +142,14 @@ class VisualsUISubState extends BaseOptionsMenu
 		option.decimals = 1;
 		addOption(option);
 		
+		#if !mobile
 		var option:Option = new Option('FPS Counter',
 			'If unchecked, hides FPS Counter.',
 			'showFPS',
 			'bool');
 		addOption(option);
 		option.onChange = onChangeFPSCounter;
-
-		#if native
-		var option:Option = new Option('VSync',
-			'If checked, Enables VSync fixing any screen tearing at the cost of capping the FPS to screen refresh rate.\n(Must restart the game to have an effect)',
-			'vsync',
-			'bool');
-		option.onChange = onChangeVSync;
-		addOption(option);
 		#end
-
-		var option:Option = new Option('Disable Online Shaders',
-			'If checked, disables shaders that being used on online menus.',
-			'disableOnlineShaders',
-			'bool');
-		addOption(option);
 		
 		var option:Option = new Option('Pause Screen Song:',
 			"What song do you prefer for the Pause Screen?",
@@ -258,6 +245,27 @@ class VisualsUISubState extends BaseOptionsMenu
 		};
 		addOption(option);
 
+		var option:Option = new Option('Favorite Tracks Menu Theme',
+			'If checked, the game will be picking your random favorite song as the main menu theme!',
+			'favsAsMenuTheme',
+			'bool');
+		option.onChange = () -> {
+			states.TitleState.playFreakyMusic();
+		};
+		addOption(option);
+
+		var option:Option = new Option('Disable Combo Rating',
+			'If checked, the combo rating sprite will no longer show up.',
+			'disableComboRating',
+			'bool');
+		addOption(option);
+
+		var option:Option = new Option('Disable Combo Counter',
+			'If checked, the combo counter sprite will no longer show up.',
+			'disableComboCounter',
+			'bool');
+		addOption(option);
+
 		super();
 		add(notes);
 	}
@@ -315,7 +323,7 @@ class VisualsUISubState extends BaseOptionsMenu
 
 	override function destroy()
 	{
-		if(changedMusic && !OptionsState.onPlayState) FlxG.sound.playMusic(Paths.music('freakyMenu'), 1, true);
+		if(changedMusic && !OptionsState.onPlayState) states.TitleState.playFreakyMusic();
 		isOpened = false;
 		if (GameClient.isConnected()) {
 			var data:NoteSkinStructure = NoteSkinData.getCurrent(-1);
@@ -325,14 +333,11 @@ class VisualsUISubState extends BaseOptionsMenu
 		super.destroy();
 	}
 
+	#if !mobile
 	function onChangeFPSCounter()
 	{
 		if(Main.fpsVar != null)
 			Main.fpsVar.visible = ClientPrefs.data.showFPS;
 	}
-
-	#if native
-	function onChangeVSync()
-		lime.app.Application.current.window.vsync = ClientPrefs.data.vsync;
 	#end
 }
