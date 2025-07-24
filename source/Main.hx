@@ -73,6 +73,10 @@ class Main extends Sprite
 	public static var UNOFFICIAL_BUILD:Bool = false;
 
 	public static var wankyUpdate:String = 'version';
+	public static var latestRelease:Dynamic = {};
+	public static var updateVersion:String = '';
+
+	public static var view3D:online.away.View3DHandler;
 
 	// You can pretty much ignore everything from here on - your code should go in your states.
 
