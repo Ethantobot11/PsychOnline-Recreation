@@ -211,7 +211,7 @@ class OnlineOptionsState extends MusicBeatState {
 			sezOption.ID = i++;
 
 			var sidebarOption:InputOption;
-			items.add(sidebarOption = new InputOption("Open Sidebar", "Open the Network Sidebar" + ((!controls.mobileC) ? ", if you aren't able to.\n(Press ` (Tilde) to open it at any time!)" : "")));
+			items.add(sidebarOption = new InputOption("Open Sidebar", "Open the Network Sidebar, if you aren't able to.\n(Press ` (Tilde) to open it at any time!)"));
 			sidebarOption.y = sezOption.y + sezOption.height + 50;
 			sidebarOption.screenCenter(X);
 			sidebarOption.ID = i++;
@@ -260,8 +260,6 @@ class OnlineOptionsState extends MusicBeatState {
 		add(items);
 
         changeSelection(0);
-
-		addTouchPad('UP_DOWN', 'A_B');
     }
 
     override function update(elapsed) {
@@ -281,11 +279,11 @@ class OnlineOptionsState extends MusicBeatState {
 			else if (controls.UI_DOWN_P || FlxG.mouse.wheel == -1)
 				changeSelection(1);
 
-			if (!controls.mobileC && (FlxG.mouse.deltaScreenX != 0 || FlxG.mouse.deltaScreenY != 0 || FlxG.mouse.justPressed)) {
+			if (FlxG.mouse.deltaScreenX != 0 || FlxG.mouse.deltaScreenY != 0 || FlxG.mouse.justPressed) {
                 curSelected = -1;
                 var i = 0;
                  for (item in items) {
-                    if (!controls.mobileC && FlxG.mouse.overlaps(item, camera)) {
+                    if (FlxG.mouse.overlaps(item, camera)) {
                         curSelected = i;
                         break;
                     }
@@ -298,7 +296,7 @@ class OnlineOptionsState extends MusicBeatState {
 		super.update(elapsed);
 
 		if (!inputWait) {
-			if ((controls.ACCEPT || (!controls.mobileC && FlxG.mouse.justPressed)) && curOption != null) {
+			if ((controls.ACCEPT || FlxG.mouse.justPressed) && curOption != null) {
 				if (curOption.isInput) {
 					if (FlxG.mouse.justPressed)
 						for (i => input in curOption.inputs)
