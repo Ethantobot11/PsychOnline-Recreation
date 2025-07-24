@@ -1,5 +1,6 @@
 package substates;
 
+import online.util.ShitUtil;
 import online.substates.PostTextSubstate;
 import sys.io.File;
 import online.network.Leaderboard;
@@ -18,12 +19,13 @@ import options.OptionsState;
 import online.gui.Alert;
 import online.util.FileUtils;
 
+@:access(states.PlayState)
 class PauseSubState extends MusicBeatSubstate
 {
 	var grpMenuShit:FlxTypedGroup<Alphabet>;
 
 	var menuItems:Array<String> = [];
-	var menuItemsOG:Array<String> = ['Resume', 'Restart Song', 'Chart Editor', 'Change Difficulty', 'Options', 'Exit to menu'];
+	var menuItemsOG:Array<String> = ['Resume', 'Restart Song', 'Change Difficulty', 'Options', 'Exit to menu'];
 	var difficultyChoices = [];
 	var curSelected:Int = 0;
 
@@ -40,33 +42,36 @@ class PauseSubState extends MusicBeatSubstate
 
 	public function new(x:Float, y:Float)
 	{
-		controls.isInSubstate = true;
 		super();
 		if(Difficulty.list.length < 2) menuItemsOG.remove('Change Difficulty'); //No need to change difficulty if there is only one!
 
 		if(PlayState.chartingMode)
 		{
-			menuItemsOG.insert(3, 'Leave Charting Mode');
+			menuItemsOG.insert(2, 'Leave Charting Mode');
 			
 			var num:Int = 0;
 			if(!PlayState.instance.startingSong)
 			{
 				num = 1;
-				menuItemsOG.insert(4, 'Skip Time');
+				menuItemsOG.insert(3, 'Skip Time');
 			}
-			menuItemsOG.insert(4 + num, 'End Song');
-			menuItemsOG.insert(5 + num, 'Toggle Practice Mode');
-			menuItemsOG.insert(6 + num, 'Toggle Botplay');
+			menuItemsOG.insert(3 + num, 'End Song');
+			menuItemsOG.insert(4 + num, 'Toggle Practice Mode');
+			menuItemsOG.insert(5 + num, 'Toggle Botplay');
 		}
 
 		var oof = 0;
 		if (!ClientPrefs.data.disableSongComments && PlayState.instance.songId != null) {
-			menuItemsOG.insert(4, 'Leave a Comment Now');
+			menuItemsOG.insert(3, 'Post a Comment Now');
+			oof++;
+		}
+
+		if (ClientPrefs.isDebug()) {
+			menuItemsOG.insert(3, 'Debug Tools');
 			oof++;
 		}
 
 		if (PlayState.replayData != null) {
-			menuItemsOG.remove('Chart Editor');
 			menuItemsOG.remove('Change Difficulty');
 			menuItemsOG.insert(2 + oof, 'Skip Time');
 			menuItemsOG.insert(3 + oof, 'Save Replay');
@@ -87,7 +92,14 @@ class PauseSubState extends MusicBeatSubstate
 		if(songName != null) {
 			pauseMusic.loadEmbedded(Paths.music(songName), true, true);
 		} else if (songName != 'None') {
-			pauseMusic.loadEmbedded(Paths.music(Paths.formatToSongPath(ClientPrefs.data.pauseMusic)), true, true);
+			var msc = null;
+			if (ClientPrefs.data.modSkin != null) {
+			   ShitUtil.tempSwitchMod(ClientPrefs.data.modSkin[0], () -> {
+		              msc = Paths.music(Paths.formatToSongPath(ClientPrefs.data.pauseMusic + '-' + ClientPrefs.data.modSkin[1]));
+			   });
+			}
+			msc ??= Paths.music(Paths.formatToSongPath(ClientPrefs.data.pauseMusic));
+			pauseMusic.loadEmbedded(msc, true, true);
 		}
 		pauseMusic.volume = 0;
 		pauseMusic.play(false, FlxG.random.int(0, Std.int(pauseMusic.length / 2)));
@@ -161,12 +173,15 @@ class PauseSubState extends MusicBeatSubstate
 		missingText.visible = false;
 		add(missingText);
 
+		skipTimeText = new FlxText(0, 0, 0, '', 64);
+		skipTimeText.setFormat(Paths.font("vcr.ttf"), 64, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		skipTimeText.scrollFactor.set();
+		skipTimeText.borderSize = 2;
+		add(skipTimeText);
+
 		regenMenu();
 		//cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
 		cameras = [PlayState.instance.camOther];
-
-		addTouchPad(menuItems.contains('Skip Time') ? 'LEFT_FULL' : 'UP_DOWN', 'A_B');
-		addTouchPadCamera();
 	}
 
 	var holdTime:Float = 0;
@@ -222,6 +237,31 @@ class PauseSubState extends MusicBeatSubstate
 					else if(curTime < 0) curTime += FlxG.sound.music.length;
 					updateSkipTimeText();
 				}
+			case 'Playback Rate':
+				if (controls.UI_LEFT_P) {
+					FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+					PlayState.instance.playbackRate -= 0.01;
+					holdTime = 0;
+				}
+				if (controls.UI_RIGHT_P) {
+					FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+					PlayState.instance.playbackRate += 0.01;
+					holdTime = 0;
+				}
+
+				if (controls.UI_LEFT || controls.UI_RIGHT) {
+					holdTime += elapsed;
+					if (holdTime > 0.5) {
+						PlayState.instance.playbackRate += elapsed * (controls.UI_LEFT ? -1 : 1);
+					}
+
+					if (PlayState.instance.playbackRate >= 3)
+						PlayState.instance.playbackRate = 3;
+					else if (PlayState.instance.playbackRate < 0.001)
+						PlayState.instance.playbackRate = 0.001;
+					updatePlaybackRateText();
+				}
+				
 		}
 
 		if (accepted && (cantUnpause <= 0 || !controls.controllerMode))
@@ -267,7 +307,7 @@ class PauseSubState extends MusicBeatSubstate
 					close();
 				case 'Change Difficulty':
 					menuItems = difficultyChoices;
-					deleteSkipTimeText();
+					//deleteSkipTimeText();
 					regenMenu();
 				case 'Toggle Practice Mode':
 					PlayState.instance.practiceMode = !PlayState.instance.practiceMode;
@@ -276,8 +316,6 @@ class PauseSubState extends MusicBeatSubstate
 				case "Restart Song":
 					PlayState.deathCounter++;
 					restartSong();
-				case 'Chart Editor':
-					PlayState.instance.openChartEditor();
 				case "Leave Charting Mode":
 					PlayState.deathCounter = 0;
 					restartSong();
@@ -308,7 +346,7 @@ class PauseSubState extends MusicBeatSubstate
 					PlayState.instance.botplayTxt.visible = PlayState.instance.cpuControlled;
 					PlayState.instance.botplayTxt.alpha = 1;
 					PlayState.instance.botplaySine = 0;
-				case 'Leave a Comment Now':
+				case 'Post a Comment Now':
 					close();
 					persistentUpdate = false;
 					persistentDraw = true;
@@ -341,7 +379,7 @@ class PauseSubState extends MusicBeatSubstate
 						FlxG.switchState(() -> new FreeplayState());
 					}
 					PlayState.cancelMusicFadeTween();
-					FlxG.sound.playMusic(Paths.music('freakyMenu'));
+					states.TitleState.playFreakyMusic();
 					PlayState.changedDifficulty = false;
 					PlayState.chartingMode = false;
 					FlxG.camera.followLerp = 0;
@@ -353,24 +391,81 @@ class PauseSubState extends MusicBeatSubstate
 					close();
 				case "Save Replay":
 					var replayData = Json.stringify(PlayState.replayData);
-					File.saveContent("replays/" + FileUtils.formatFile(PlayState.replayData.player) + "Replay-" + PlayState.SONG.song + "-" + Difficulty.getString().toUpperCase() + ".funkinreplay", replayData);
-					Alert.alert("Replay Saved!", "replays/" + FileUtils.formatFile(PlayState.replayData.player) + "Replay-" + PlayState.SONG.song + "-" + Difficulty.getString().toUpperCase() + ".funkinreplay");
+					var path = FileUtils.joinFiles([
+						"replays", 
+						PlayState.replayData.player + "Replay-" + PlayState.SONG.song + "-" + Difficulty.getString().toUpperCase() + ".funkinreplay"
+					]);
+					File.saveContent(path, replayData);
+					Alert.alert("Replay Saved!", path);
+					close();
+				case "Debug Tools":
+					menuItems = [
+						'Playback Rate',
+						'Run Script',
+						'Swap Sides',
+						'Chart Edtor',
+						'Character Editor',
+						'Position Debug',
+						'Swing Mode'
+					];
+					if (PlayState.instance.stage3D != null)
+						menuItems.insert(1, 'Stage 3D Debug');
+					if (!PlayState.chartingMode)
+						menuItems.insert(2, 'Charting Mode');
+					menuItems.push('Back');
+					//deleteSkipTimeText();
+					regenMenu();
+				case 'Swap Sides':
+					PlayState.instance.toggleOpponentMode();
+					close();
+				case 'Stage 3D Debug': 
+					close();
+					Main.view3D.debugMode = !Main.view3D.debugMode;
+				case 'Position Debug': 
+					PlayState.instance.debugPoser.editMode = !PlayState.instance.debugPoser.editMode;
+					close();
+				case 'Chart Edtor':
+					PlayState.instance.openChartEditor();
+					close();
+				case 'Character Editor':
+					PlayState.instance.openCharacterEditor();
+					close();
+				case 'Swing Mode':
+					PlayState.swingMode = !PlayState.swingMode;
+					close();
+				case 'Charting Mode':
+					PlayState.chartingMode = true;
+					close();
+					PlayState.instance.openPauseMenu();
+				case 'Run Script':
+					close();
+					persistentUpdate = false;
+					persistentDraw = true;
+					PlayState.instance.paused = true;
+					PlayState.instance.openSubState(new PostTextSubstate('Input Haxe code here:', text -> {
+						var hs = new psychlua.HScript(null, text);
+						Alert.alert(hs.returnValue);
+					}));
+				case 'Back':
+					menuItems = menuItemsOG;
+					regenMenu();
+				default:
 					close();
 			}
 		}
 	}
 
-	function deleteSkipTimeText()
-	{
-		if(skipTimeText != null)
-		{
-			skipTimeText.kill();
-			remove(skipTimeText);
-			skipTimeText.destroy();
-		}
-		skipTimeText = null;
-		skipTimeTracker = null;
-	}
+	// function deleteSkipTimeText()
+	// {
+	// 	if(skipTimeText != null)
+	// 	{
+	// 		skipTimeText.kill();
+	// 		remove(skipTimeText);
+	// 		skipTimeText.destroy();
+	// 	}
+	// 	skipTimeText = null;
+	// 	skipTimeTracker = null;
+	// }
 
 	public static function restartSong(noTrans:Bool = false)
 	{
@@ -389,7 +484,6 @@ class PauseSubState extends MusicBeatSubstate
 
 	override function destroy()
 	{
-		controls.isInSubstate = false;
 		pauseMusic.destroy();
 
 		super.destroy();
@@ -421,7 +515,7 @@ class PauseSubState extends MusicBeatSubstate
 				item.alpha = 1;
 				// item.setGraphicSize(Std.int(item.width));
 
-				if(item == skipTimeTracker)
+				if(item == skipTimeTracker && item.text == 'Skip Time')
 				{
 					curTime = Math.max(0, Conductor.songPosition);
 					updateSkipTimeText();
@@ -440,23 +534,24 @@ class PauseSubState extends MusicBeatSubstate
 			obj.destroy();
 		}
 
+		skipTimeText.visible = false;
+		skipTimeTracker = null;
+
 		for (i in 0...menuItems.length) {
 			var item = new Alphabet(90, 320, menuItems[i], true);
 			item.isMenuItem = true;
 			item.targetY = i;
 			grpMenuShit.add(item);
 
-			if(menuItems[i] == 'Skip Time')
-			{
-				skipTimeText = new FlxText(0, 0, 0, '', 64);
-				skipTimeText.setFormat(Paths.font("vcr.ttf"), 64, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-				skipTimeText.scrollFactor.set();
-				skipTimeText.borderSize = 2;
-				skipTimeTracker = item;
-				add(skipTimeText);
-
-				updateSkipTextStuff();
-				updateSkipTimeText();
+			switch (menuItems[i]) {
+				case 'Skip Time':
+					skipTimeTracker = item;
+					updateSkipTextStuff();
+					updateSkipTimeText();
+				case 'Playback Rate':
+					skipTimeTracker = item;
+					updateSkipTextStuff();
+					updatePlaybackRateText();
 			}
 		}
 		curSelected = 0;
@@ -475,5 +570,9 @@ class PauseSubState extends MusicBeatSubstate
 	function updateSkipTimeText()
 	{
 		skipTimeText.text = FlxStringUtil.formatTime(Math.max(0, Math.floor(curTime / 1000)), false) + ' / ' + FlxStringUtil.formatTime(Math.max(0, Math.floor(FlxG.sound.music.length / 1000)), false);
+	}
+
+	function updatePlaybackRateText() {
+		skipTimeText.text = FlxMath.roundDecimal(PlayState.instance.playbackRate, 2) + 'x';
 	}
 }
