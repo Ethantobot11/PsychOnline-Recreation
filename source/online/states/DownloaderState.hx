@@ -10,7 +10,9 @@ import flixel.graphics.FlxGraphic;
 import online.mods.GameBanana.GBSub;
 import flixel.group.FlxGroup;
 
+#if lumod
 @:build(lumod.LuaScriptClass.build())
+#end
 class DownloaderState extends MusicBeatState {
 	var items:FlxTypedSpriteGroup<ModItem> = new FlxTypedSpriteGroup<ModItem>();
 	var itemsY:Int = FlxG.height - (3 * 190) - 50;
@@ -109,17 +111,13 @@ class DownloaderState extends MusicBeatState {
 		pageInfo.y = FlxG.height - pageInfo.height - 30;
 		add(pageInfo);
 
-		final q:String = (controls.mobileC) ? 'LEFT' : 'Q';
-
-		var pageTip1 = new FlxText(20, 0, FlxG.width, '$q - Go to previous page');
+		var pageTip1 = new FlxText(20, 0, FlxG.width, 'Q - Go to previous page');
 		pageTip1.setFormat("VCR OSD Mono", 20, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		pageTip1.y = pageInfo.y;
 		pageTip1.alpha = 0.6;
 		add(pageTip1);
 
-		final e:String = (controls.mobileC) ? 'RIGHT' : 'E';
-
-		var pageTip2 = new FlxText(-20, 0, FlxG.width, '$e - Go to next page');
+		var pageTip2 = new FlxText(-20, 0, FlxG.width, 'E - Go to next page');
 		pageTip2.setFormat("VCR OSD Mono", 20, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		pageTip2.y = pageInfo.y;
 		pageTip2.alpha = pageTip1.alpha;
@@ -128,8 +126,6 @@ class DownloaderState extends MusicBeatState {
 		FlxG.sound.music.fadeIn(1, 1, 0.5);
 
 		loadNextPage(true);
-
-		addTouchPad('LEFT_RIGHT', 'B');
     }
 
 	function loadNextPage(?value:Int = 0, ?newSearch:Bool = false) {
@@ -303,20 +299,20 @@ class DownloaderState extends MusicBeatState {
 			}
 
 			if (!LoadingScreen.loading) {
-				if (FlxG.mouse.wheel == 1 || (touchPad.buttonLeft.justPressed || FlxG.keys.justPressed.Q)) {
+				if (FlxG.mouse.wheel == 1 || FlxG.keys.justPressed.Q) {
 					loadNextPage(-1);
 				}
-				if (FlxG.mouse.wheel == -1 || (touchPad.buttonRight.justPressed || FlxG.keys.justPressed.E)) {
+				if (FlxG.mouse.wheel == -1 || FlxG.keys.justPressed.E) {
 					loadNextPage(1);
 				}
 				
-				if (!controls.mobileC && controls.UI_RIGHT_P) {
+				if (controls.UI_RIGHT_P) {
 					changeSelection(1);
 				}
-				if (!controls.mobileC && controls.UI_LEFT_P) {
+				if (controls.UI_LEFT_P) {
 					changeSelection(-1);
 				}
-				if (!controls.mobileC && controls.UI_UP_P) {
+				if (controls.UI_UP_P) {
 					if (curSelected - 5 < 0) {
 						curSelected = -1;
 					}
@@ -324,7 +320,7 @@ class DownloaderState extends MusicBeatState {
 						changeSelection(-5);
 					}
 				}
-				if (!controls.mobileC && controls.UI_DOWN_P) {
+				if (controls.UI_DOWN_P) {
 					changeSelection(5);
 				}
 
