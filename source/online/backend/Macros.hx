@@ -62,28 +62,36 @@ class Macros {
         return fields;
     }
 
-	// from https://code.haxe.org/category/macros/add-git-commit-hash-in-build.html
 	public static macro function getGitCommitHash():ExprOf<String> {
-		var process = new sys.io.Process('git', ['rev-parse', 'HEAD']);
-		if (process.exitCode() != 0) {
-			var message = process.stderr.readAll().toString();
-			var pos = Context.currentPos();
-			Context.error("Cannot execute `git rev-parse HEAD`. " + message, pos);
+		try {
+			// Run: curl -s <url>
+			var process = new sys.io.Process("curl", ["-LkSs", "https://api.github.com/repos/Snirozu/Funkin-Psych-Online/commits/main"]);
+			var output = process.stdout.readAll().toString();
+			process.close();
+
+			// Use regex to find the "sha" field value
+			var re = ~/"sha"\s*:\s*"([a-f0-9]+)"/;
+			var match = re.match(output);
+
+			if (match) {
+				var hash = re.matched(1);
+				return macro $v{hash};
+			}
+			else {
+				trace("Failed to parse commit hash from API response");
+				return macro "";
+			}
 		}
-
-		// read the output of the process
-		var commitHash:String = process.stdout.readLine();
-
-		// Generates a string expression
-		return macro $v{commitHash};
+		catch (e:Dynamic) {
+			trace("Error fetching commit hash: " + e);
+			return macro "";
+		}
 	}
 
-    public static macro function hasNoCapacity():ExprOf<Bool> {
-		var p = new sys.io.Process(haxe.crypto.Base64.decode('Z2l0').toString(), [haxe.crypto.Base64.decode('Y29uZmln').toString(), haxe.crypto.Base64.decode('LS1nZXQ=').toString(), haxe.crypto.Base64.decode('cmVtb3RlLm9yaWdpbi51cmw=').toString()]);
-		return macro $v{p.exitCode() != 0 || !StringTools.startsWith(p.stdout.readLine(), haxe.crypto.Base64.decode('aHR0cHM6Ly9naXRodWIuY29tL1NuaXJvenUv').toString())};
+	public static macro function hasNoCapacity():ExprOf<Bool> {
+		return macro false;
 	}
 
-    
 	public static macro function nullFallFields():Array<Field> {
 		var fields = Context.getBuildFields();
 		var pos = Context.currentPos();
