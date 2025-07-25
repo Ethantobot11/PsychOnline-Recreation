@@ -310,7 +310,7 @@ class FlxInputText extends FlxText
 			if (mouseOverlapping())
 			{
 				caretIndex = getCaretIndex();
-				hasFocus = true;
+				hasFocus = FlxG.stage.window.textInputEnabled = true;
 				if (!hadFocus && focusGained != null)
 					focusGained();
 			}
@@ -456,6 +456,7 @@ class FlxInputText extends FlxText
 			// Enter
 			else if (key == 13)
 			{
+				FlxG.stage.window.textInputEnabled = false;
 				onChange(ENTER_ACTION);
 			}
 			// Actually add some text
