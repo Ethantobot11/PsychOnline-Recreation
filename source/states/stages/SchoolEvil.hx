@@ -6,7 +6,7 @@ import substates.GameOverSubstate;
 import cutscenes.DialogueBox;
 
 #if MODS_ALLOWED
-import sys.FileSystem;
+import backend.io.PsychFileSystem as FileSystem;
 #else
 import openfl.utils.Assets as OpenFlAssets;
 #end
