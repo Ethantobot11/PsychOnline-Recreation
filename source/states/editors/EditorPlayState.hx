@@ -129,12 +129,27 @@ class EditorPlayState extends MusicBeatSubstate
 		dataTxt.borderSize = 1.25;
 		add(dataTxt);
 
-		var tipText:FlxText = new FlxText(10, FlxG.height - 24, 0, 'Press ESC to Go Back to Chart Editor', 16);
+		var daButton:String;
+		#if android
+		daButton = "BACK";
+		#else
+		if (controls.mobileC)
+			daButton = "P";
+		else
+			daButton = "ESC";
+		#end
+
+		var tipText:FlxText = new FlxText(10, FlxG.height - 24, 0, 'Press ' + daButton + ' to Go Back to Chart Editor', 16);
 		tipText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		tipText.borderSize = 2;
 		tipText.scrollFactor.set();
 		add(tipText);
 		FlxG.mouse.visible = false;
+
+		addHitbox();
+		hitbox.visible = true;
+		hitbox.onButtonDown.add(onButtonPress);
+		hitbox.onButtonUp.add(onButtonRelease);
 		
 		generateSong(PlayState.SONG.song);
 
@@ -145,13 +160,20 @@ class EditorPlayState extends MusicBeatSubstate
 		// Updating Discord Rich Presence (with Time Left)
 		DiscordClient.changePresence('Playtesting on Chart Editor', PlayState.SONG.song, null, true, songLength);
 		#end
+
+		#if !android
+		addTouchPad("NONE", "P");
+		addTouchPadCamera();
+		#end
+
 		RecalculateRating();
 	}
 
 	override function update(elapsed:Float)
 	{
-		if(controls.BACK || FlxG.keys.justPressed.ESCAPE)
+		if(#if android FlxG.android.justReleased.BACK #else touchPad.buttonP.justPressed #end || controls.BACK || FlxG.keys.justPressed.ESCAPE)
 		{
+			hitbox.visible = false;
 			endSong();
 			super.update(elapsed);
 			return;
@@ -208,7 +230,7 @@ class EditorPlayState extends MusicBeatSubstate
 					daNote.active = false;
 					daNote.visible = false;
 
-					daNote.kill();
+					//if(!ClientPrefs.data.lowQuality) daNote.kill();
 					notes.remove(daNote, true);
 					daNote.destroy();
 				}
@@ -712,7 +734,7 @@ class EditorPlayState extends MusicBeatSubstate
 				{
 					for (doubleNote in pressNotes) {
 						if (Math.abs(doubleNote.strumTime - epicNote.strumTime) < 1) {
-							doubleNote.kill();
+							//if(!ClientPrefs.data.lowQuality) doubleNote.kill();
 							notes.remove(doubleNote, true);
 							doubleNote.destroy();
 						} else
@@ -756,6 +778,24 @@ class EditorPlayState extends MusicBeatSubstate
 			spr.playAnim('static');
 			spr.resetAnim = 0;
 		}
+	}
+
+	private function onButtonPress(button:TouchButton, ids:Array<MobileInputID>):Void
+	{
+		if (ids.filter(id -> id.toString().startsWith("EXTRA")).length > 0 || ids.filter(id -> id.toString().startsWith("TAUNT")).length > 0)
+			return;
+
+		var buttonCode:Int = (ids[0].toString().startsWith('NOTE')) ? ids[0] : ids[1];
+		if (button.justPressed) keyPressed(buttonCode);
+	}
+
+	private function onButtonRelease(button:TouchButton, ids:Array<MobileInputID>):Void
+	{
+		if (ids.filter(id -> id.toString().startsWith("EXTRA")).length > 0 || ids.filter(id -> id.toString().startsWith("TAUNT")).length > 0)
+			return;
+
+		var buttonCode:Int = (ids[0].toString().startsWith('NOTE')) ? ids[0] : ids[1];
+		if(buttonCode > -1) keyReleased(buttonCode);
 	}
 	
 	// Hold notes
@@ -809,7 +849,7 @@ class EditorPlayState extends MusicBeatSubstate
 
 		if (!note.isSustainNote)
 		{
-			note.kill();
+			//if(!ClientPrefs.data.lowQuality) note.kill();
 			notes.remove(note, true);
 			note.destroy();
 		}
@@ -830,7 +870,7 @@ class EditorPlayState extends MusicBeatSubstate
 
 				if (!note.isSustainNote)
 				{
-					note.kill();
+					//if(!ClientPrefs.data.lowQuality) note.kill();
 					notes.remove(note, true);
 					note.destroy();
 				}
@@ -850,7 +890,7 @@ class EditorPlayState extends MusicBeatSubstate
 
 			if (!note.isSustainNote)
 			{
-				note.kill();
+				//if(!ClientPrefs.data.lowQuality) note.kill();
 				notes.remove(note, true);
 				note.destroy();
 			}
@@ -861,7 +901,7 @@ class EditorPlayState extends MusicBeatSubstate
 		//Dupe note remove
 		notes.forEachAlive(function(note:Note) {
 			if (daNote != note && daNote.mustPress && daNote.noteData == note.noteData && daNote.isSustainNote == note.isSustainNote && Math.abs(daNote.strumTime - note.strumTime) < 1) {
-				note.kill();
+				//if(!ClientPrefs.data.lowQuality) note.kill();
 				notes.remove(note, true);
 				note.destroy();
 			}
