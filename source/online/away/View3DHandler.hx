@@ -149,7 +149,7 @@ class View3DHandler extends View3D {
 		render();
 	}
 
-	override function __enterFrame(_delta:Int) {
+	override function __enterFrame(_delta:Float) {
 		super.__enterFrame(_delta);
 
 		if (stageScene == null) {
@@ -157,7 +157,7 @@ class View3DHandler extends View3D {
 		}
 
 		if (!debugMode && !PlayState.instance?.paused) {
-			stageScene.update(_delta / 1000);
+			stageScene.update(_delta);
 		}
 
 		camera.rotationX = FlxMath.bound(camera.rotationX, -90, 90);
