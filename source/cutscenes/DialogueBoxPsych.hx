@@ -4,8 +4,8 @@ import tjson.TJSON as Json;
 import openfl.utils.Assets;
 
 #if sys
-import sys.FileSystem;
-import sys.io.File;
+import backend.io.PsychFileSystem as FileSystem;
+import backend.io.PsychFile as File;
 #end
 
 import objects.TypedAlphabet;
@@ -164,7 +164,7 @@ class DialogueBoxPsych extends FlxSpriteGroup
 			bgFade.alpha += 0.5 * elapsed;
 			if(bgFade.alpha > 0.5) bgFade.alpha = 0.5;
 
-			if(Controls.instance.ACCEPT) {
+			if(TouchUtil.justPressed || Controls.instance.ACCEPT) {
 				if(!daText.finishedText) {
 					daText.finishText();
 					if(skipDialogueThing != null) {
