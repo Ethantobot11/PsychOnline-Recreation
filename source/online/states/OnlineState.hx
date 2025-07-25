@@ -60,11 +60,13 @@ class OnlineState extends MusicBeatState {
 
 	var selectLine:FlxSprite;
 	var descBox:FlxSprite;
-	
+
+	#if !mobile
 	var discord:FlxSprite;
 	var github:FlxSprite;
 	var bsky:FlxSprite;
 	var twitter:FlxSprite;
+	#end
 
     function onRoomJoin(err:Dynamic) {
 		if (err != null) {
@@ -126,7 +128,7 @@ class OnlineState extends MusicBeatState {
 		warp.makeGraphic(FlxG.width, FlxG.height, FlxColor.TRANSPARENT);
 		warp.updateHitbox();
 		warp.screenCenter();
-		if (!ClientPrefs.data.lowQuality && ClientPrefs.data.shaders)
+		if (!ClientPrefs.data.lowQuality && !ClientPrefs.data.disableOnlineShaders)
 			add(new WarpEffect(warp));
 		warp.antialiasing = ClientPrefs.data.antialiasing;
 		add(warp);
@@ -168,6 +170,7 @@ class OnlineState extends MusicBeatState {
 		items.screenCenter(Y);
         add(items);
 
+		#if !mobile
 		discord = new FlxSprite();
 		discord.antialiasing = ClientPrefs.data.antialiasing;
 		discord.frames = Paths.getSparrowAtlas('online_discord');
@@ -179,8 +182,7 @@ class OnlineState extends MusicBeatState {
 		discord.x = 30;
 		discord.y = FlxG.height - discord.height - 30;
 		discord.alpha = 0.8;
-		if (!Main.UNOFFICIAL_BUILD)
-			add(discord);
+		add(discord);
 
 		github = new FlxSprite();
 		github.antialiasing = ClientPrefs.data.antialiasing;
@@ -193,8 +195,7 @@ class OnlineState extends MusicBeatState {
 		github.x = discord.x + discord.width + 20;
 		github.y = FlxG.height - github.height - 28;
 		github.alpha = 0.8;
-		if (!Main.UNOFFICIAL_BUILD)
-			add(github);
+		add(github);
 
 		if (twitterIsDead) {
 			bsky = new FlxSprite();
@@ -207,8 +208,7 @@ class OnlineState extends MusicBeatState {
 			bsky.x = github.x + github.width + 20;
 			bsky.y = FlxG.height - bsky.height - 28;
 			bsky.alpha = 0.8;
-			if (!Main.UNOFFICIAL_BUILD)
-				add(bsky);
+			add(bsky);
 		}
 		else {
 			twitter = new FlxSprite();
@@ -221,10 +221,9 @@ class OnlineState extends MusicBeatState {
 			twitter.x = github.x + github.width + 20;
 			twitter.y = FlxG.height - twitter.height - 28;
 			twitter.alpha = 0.8;
-			if (!Main.UNOFFICIAL_BUILD)
-				add(twitter);
+			add(twitter);
 		}
-		
+		#end
 
 		itemDesc = new FlxText(0, FlxG.height - 170);
 		itemDesc.setFormat("VCR OSD Mono", 25, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -302,6 +301,8 @@ class OnlineState extends MusicBeatState {
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
 
 		FlxG.mouse.visible = true;
+
+		addTouchPad('NONE', 'B');
     }
 
 	override function destroy() {
@@ -354,6 +355,7 @@ class OnlineState extends MusicBeatState {
 			if (controls.ACCEPT || (FlxG.mouse.justPressed && mouseInItems)) {
 				switch (itms[curSelected].toLowerCase()) {
 					case "join":
+						FlxG.stage.window.textInputEnabled = true;
 						inputWait = true;
 					case "find":
 						disableInput = true;
@@ -399,6 +401,7 @@ class OnlineState extends MusicBeatState {
 				GameClient.joinRoom(Clipboard.text, onRoomJoin);
 			}
 
+			#if !mobile
 			if (FlxG.mouse.justPressed || FlxG.mouse.justMoved) {
 				if (FlxG.mouse.overlaps(discord)) {
 					discord.alpha = 1;
@@ -471,6 +474,7 @@ class OnlineState extends MusicBeatState {
 					}
 				}
 			}
+			#end
 		}
     }
 	
@@ -571,6 +575,7 @@ class OnlineState extends MusicBeatState {
 			switch (itms[curSelected].toLowerCase()) {
 				case "join":
 					disableInput = true;
+					FlxG.stage.window.textInputEnabled = false;
 					if (daCoomCode.toLowerCase() == "adachi") {
 						FlxG.sound.playMusic(Paths.sound('cabbage'));
 						var image = new FlxSprite().loadGraphic(Paths.image('unnamed_file_from_google'));
