@@ -74,8 +74,12 @@ class SetupModsState extends MusicBeatState {
 		items.screenCenter(Y);
 		add(items);
 
+		final accept:String = (controls.mobileC) ? 'A' : 'ACCEPT, Paste links with CTRL + V';
+		final back:String = (controls.mobileC) ? 'B' : 'BACK';
+		final shift:String = (controls.mobileC) ? 'C' : 'SHIFT';
+
 		var title = new FlxText(0, 0, FlxG.width, 
-        "Before you play, it is recommended to set links for your mods!\nSelect mods with ACCEPT, Paste links with CTRL + V, Leave with BACK\nHold SHIFT while exiting to discard all changes"
+        "Before you play, it is recommended to set links for your mods!\nSelect mods with " + accept + ", Leave with " + back + "\nHold " + shift + " while exiting to discard all changes"
         );
 		title.setFormat("VCR OSD Mono", 22, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		title.y = 50;
@@ -95,6 +99,9 @@ class SetupModsState extends MusicBeatState {
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
 
 		changeSelection(0);
+
+		addTouchPad('UP_DOWN', 'A_B_C');
+		addTouchPadCamera(); //wtf?
     }
 
     override function update(elapsed:Float) {
@@ -103,8 +110,8 @@ class SetupModsState extends MusicBeatState {
         if (disableInput) return;
 
 		if (!inInput) {
-			if (controls.ACCEPT || FlxG.mouse.justPressed) {
-				inInput = true;
+			if (controls.ACCEPT || (!controls.mobileC && FlxG.mouse.justPressed)) {
+				inInput = FlxG.stage.window.textInputEnabled = true;
 				changeSelection(0);
 			}
             
@@ -113,8 +120,8 @@ class SetupModsState extends MusicBeatState {
 			else if (controls.UI_DOWN_P || FlxG.mouse.wheel == -1)
 				changeSelection(1);
 
-			if (controls.BACK || FlxG.mouse.justPressedRight) {
-				if (!FlxG.keys.pressed.SHIFT) {
+			if (controls.BACK || (!controls.mobileC && FlxG.mouse.justPressedRight)) {
+				if (!touchPad.buttonC.pressed || !FlxG.keys.pressed.SHIFT) {
 					var i = 0;
 					for (mod in swagMods) {
 						OnlineMods.saveModURL(mod, modsInput[i]);
@@ -128,7 +135,7 @@ class SetupModsState extends MusicBeatState {
 			}
         }
 		else {
-			if (FlxG.mouse.justPressedRight) {
+			if ((!controls.mobileC && FlxG.mouse.justPressedRight)) {
 				tempDisableInput();
 				inInput = false;
 				changeSelection(0);
@@ -190,7 +197,7 @@ class SetupModsState extends MusicBeatState {
 		}
 		else if (key == 13 || key == 27) { // enter or esc
 			tempDisableInput();
-			inInput = false;
+			inInput = FlxG.stage.window.textInputEnabled = false;
 			changeSelection(0);
 			return;
 		}
