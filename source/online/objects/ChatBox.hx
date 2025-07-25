@@ -8,20 +8,22 @@ import lime.system.Clipboard;
 
 class ChatBox extends FlxTypedSpriteGroup<FlxSprite> {
 	public static var instance:ChatBox;
+	final accept:String = Controls.instance.mobileC ? "RETURN" : "ACCEPT";
+	final tab:String = Controls.instance.mobileC ? "C" : "TAB";
 	var prevMouseVisibility:Bool = false;
     public var focused(default, set):Bool = false;
 	function set_focused(v) {
 		if (v) {
 			prevMouseVisibility = FlxG.mouse.visible;
 			FlxG.mouse.visible = true;
-			typeTextHint.text = "(Type something to input the message, ACCEPT to send)";
+			typeTextHint.text = "(Type something to input the message, " + accept + " to send)";
 			typeBg.colorTransform.alphaOffset = 0;
 			typeBg.scale.x = FlxG.width;
 			ClientPrefs.toggleVolumeKeys(false);
 		}
 		else {
 			FlxG.mouse.visible = prevMouseVisibility;
-			typeTextHint.text = "(Press TAB to open chat!)";
+			typeTextHint.text = '(Press $tab to open chat!)';
 			typeBg.colorTransform.alphaOffset = -100;
 			typeBg.scale.x = Std.int(bg.width);
 			ClientPrefs.toggleVolumeKeys(true);
@@ -172,7 +174,7 @@ class ChatBox extends FlxTypedSpriteGroup<FlxSprite> {
 
     override function update(elapsed) {
 		if (focused || alpha > 0) {
-			if (FlxG.keys.justPressed.ESCAPE) {
+			if (FlxG.keys.justPressed.ESCAPE #if android || FlxG.android.justReleased.BACK #end) {
 				focused = false;
 			}
 
@@ -241,8 +243,9 @@ class ChatBox extends FlxTypedSpriteGroup<FlxSprite> {
 
         super.update(elapsed);
 
-		if (FlxG.keys.justPressed.TAB) {
+		if (MusicBeatState.getState().touchPad?.buttonC?.justPressed == true || FlxG.keys.justPressed.TAB) {
 			focused = !focused;
+			#if !android FlxG.stage.window.textInputEnabled = focused; #end
 		}
 
 		typeTextHint.visible = focused ? (typeText.text.length <= 0) : true;
