@@ -336,7 +336,7 @@ class Shader
 			{
 				try
 				{
-					final folder:String = #if (android && !macro) mobile.backend.StorageUtil.getExternalStorageDirectory() + #else Sys.getCwd() + #end 'logs/';
+					final folder:String = #if (android && !macro) mobile.backend.StorageUtil.getExternalStorageDirectory() #else Sys.getCwd() #end + 'logs/';
 					if (!sys.FileSystem.exists(folder))
 						sys.FileSystem.createDirectory(folder);
 
