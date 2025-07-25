@@ -8,10 +8,13 @@ import openfl.utils.Assets;
 import lime.utils.Assets as LimeAssets;
 
 #if sys
-import sys.io.File;
-import sys.FileSystem;
+import backend.io.PsychFile as File;
+import backend.io.PsychFileSystem as FileSystem;
 #end
 
+#if cpp
+@:cppFileCode('#include <thread>')
+#end
 class CoolUtil
 {
 	inline public static function quantize(f:Float, snap:Float){
@@ -145,4 +148,23 @@ class CoolUtil
 		}
 		return haxArr;
 	}
+
+	public static function showPopUp(message:String, title:String):Void
+	{
+		/*#if android
+		AndroidTools.showAlertDialog(title, message, {name: "OK", func: null}, null);
+		#else*/
+		FlxG.stage.window.alert(message, title);
+		//#end
+	}
+
+	#if cpp
+    @:functionCode('
+        return std::thread::hardware_concurrency();
+    ')
+	#end
+    public static function getCPUThreadsCount():Int
+    {
+        return 1;
+    }
 }
