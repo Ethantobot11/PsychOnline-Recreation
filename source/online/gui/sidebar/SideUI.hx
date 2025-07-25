@@ -1,6 +1,6 @@
 package online.gui.sidebar;
 
-import sys.FileSystem;
+import backend.io.PsychFileSystem as FileSystem;
 import online.gui.sidebar.tabs.*;
 import online.gui.sidebar.obj.*;
 import online.network.FunkinNetwork;
@@ -67,9 +67,12 @@ class SideUI extends WSprite {
 
 		instance = this;
 
-		for (file in FileSystem.readDirectory('assets/images/sidebar')) {
-			Paths.excludeAsset('assets/images/sidebar/' + file);
+		try {
+			for (file in FileSystem.readDirectory('assets/images/sidebar')) {
+				Paths.excludeAsset('assets/images/sidebar/' + file);
+			}
 		}
+		catch (e:Dynamic) {}
 
 		if (stage != null)
 			init();
