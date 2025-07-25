@@ -413,7 +413,7 @@ class NoteOffsetState extends MusicBeatState
 				}
 			}
 
-			if(controls.RESET)
+			if(touchPad.buttonC.justPressed || controls.RESET)
 			{
 				for (i in 0...getComboOffset().length)
 				{
@@ -451,7 +451,7 @@ class NoteOffsetState extends MusicBeatState
 				updateNoteDelay();
 			}
 
-			if(controls.RESET)
+			if(touchPad.buttonC.justPressed || controls.RESET)
 			{
 				holdTime = 0;
 				barPercent = 0;
@@ -602,14 +602,23 @@ class NoteOffsetState extends MusicBeatState
 			controllerPointer.visible = controls.controllerMode;
 		}
 
+		removeTouchPad();
+
 		var str:String;
 		var str2:String;
-		if(onComboMenu)
+		if(onComboMenu) {
 			str = 'Combo Offset';
-		else
+			addTouchPad('NONE', 'A_B_C');
+			addTouchPadCamera();
+		} else {
 			str = 'Note/Beat Delay';
+			addTouchPad('LEFT_FULL', 'A_B_C');
+			addTouchPadCamera();
+		}
 
-		if(!controls.controllerMode)
+		if(controls.mobileC)
+			str2 = '(Press A to Switch)';
+		else if(!controls.controllerMode)
 			str2 = '(Press Accept to Switch)';
 		else
 			str2 = '(Press Start to Switch)';
