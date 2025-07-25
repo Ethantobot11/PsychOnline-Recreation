@@ -124,7 +124,11 @@ class FunkinNetwork {
 	static function saveCredentials(json:Dynamic) {
 		trace("Saving credentials");
 		Auth.save(json.id, json.token);
+		// #if mobile
+		// StorageUtil.saveContent('recovery_token.txt', json.id + "\n" + json.secret);
+		// #else
 		// new FileReference().save(json.id + "\n" + json.secret, "recovery_token.txt");
+		// #end
 		ping();
 	}
 
