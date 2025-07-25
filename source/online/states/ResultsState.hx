@@ -3,7 +3,7 @@ package online.states;
 import flixel.util.FlxStringUtil;
 import backend.WeekData;
 import flixel.effects.FlxFlicker;
-import sys.FileSystem;
+import backend.io.PsychFileSystem as FileSystem;
 import objects.Character;
 
 #if lumod
@@ -395,6 +395,7 @@ class ResultsState extends MusicBeatState {
 		});
 
 		registerMessages();
+		addTouchPad('NONE', 'B_C_T');
     }
 
 	function registerMessages() {
