@@ -1,10 +1,6 @@
 package;
 
 import online.GameClient;
-import lumod.Lumod;
-#if AWAY_TEST
-import states.stages.AwayStage;
-#end
 import states.MainMenuState;
 import externs.WinAPI;
 import haxe.Exception;
@@ -20,36 +16,23 @@ import openfl.events.Event;
 import openfl.display.StageScaleMode;
 import lime.app.Application;
 import states.TitleState;
-#if COPYSTATE_ALLOWED
-import states.CopyState;
-#end
 #if mobile
 import mobile.backend.MobileScaleMode;
 #end
 
-#if linux
+#if (linux || mac)
 import lime.graphics.Image;
 #end
 
-import sys.FileSystem;
+import backend.io.PsychFileSystem as FileSystem;
 
-#if windows
-@:buildXml('
-<target id="haxe">
-	<lib name="wininet.lib" if="windows" />
-	<lib name="dwmapi.lib" if="windows" />
-</target>
-')
-@:cppFileCode('
-#include <windows.h>
-#include <winuser.h>
-#pragma comment(lib, "Shell32.lib")
-extern "C" HRESULT WINAPI SetCurrentProcessExplicitAppUserModelID(PCWSTR AppID);
-')
+#if (linux && !debug)
+@:cppInclude('./external/gamemode_client.h')
+@:cppFileCode('#define GAMEMODE_AUTO')
 #end
 class Main extends Sprite
 {
-	var game = {
+	public static var game = {
 		width: 1280, // WINDOW width
 		height: 720, // WINDOW height
 		initialState: TitleState, // initial game state
@@ -61,16 +44,11 @@ class Main extends Sprite
 
 	public static var fpsVar:FPS;
 
-	public static final platform:String = #if mobile "Phones" #else "PCs" #end;
-	#if AWAY_TEST
-	public static var stage3D:AwayStage;
-	#end
-
 	public static final PSYCH_ONLINE_VERSION:String = "0.11.9";
 	public static final CLIENT_PROTOCOL:Float = 8;
 	public static final GIT_COMMIT:String = online.backend.Macros.getGitCommitHash();
 	public static final LOW_STORAGE:Bool = online.backend.Macros.hasNoCapacity();
-	public static var UNOFFICIAL_BUILD:Bool = false;
+	public static var UNOFFICIAL_BUILD:Bool = Main.LOW_STORAGE;
 
 	public static var wankyUpdate:String = 'version';
 	public static var latestRelease:Dynamic = {};
@@ -92,6 +70,7 @@ class Main extends Sprite
 		}
 		#end
 		
+		Lib.current.addChild(view3D = new online.away.View3DHandler());
 		Lib.current.addChild(new Main());
 		Lib.current.addChild(new online.gui.sidebar.SideUI());
 		Lib.current.addChild(new online.gui.Alert());
@@ -109,21 +88,8 @@ class Main extends Sprite
 		#end
 		backend.CrashHandler.init();
 
-		#if windows
-		// DPI Scaling fix for windows 
-		// this shouldn't be needed for other systems
-		// Credit to YoshiCrafter29 for finding this function
-		untyped __cpp__("SetProcessDPIAware();");
-
-		var display = lime.system.System.getDisplay(0);
-		if (display != null) {
-			var dpiScale:Float = display.dpi / 96;
-			Application.current.window.width = Std.int(game.width * dpiScale);
-			Application.current.window.height = Std.int(game.height * dpiScale);
-
-			Application.current.window.x = Std.int((Application.current.window.display.bounds.width - Application.current.window.width) / 2);
-			Application.current.window.y = Std.int((Application.current.window.display.bounds.height - Application.current.window.height) / 2);
-		}
+		#if (cpp && windows)
+		backend.Native.fixScaling();
 		#end
 
 		if (stage != null)
@@ -172,6 +138,8 @@ class Main extends Sprite
 
 		CoolUtil.setDarkMode(true);
 
+		#if lumod
+		Lumod.addons.push(online.backend.LuaModuleSwap.LumodModuleAddon);
 		Lumod.scriptPathHandler = scriptPath -> {
 			var defaultPath:String = 'lumod/' + scriptPath;
 
@@ -183,19 +151,17 @@ class Main extends Sprite
 			return defaultPath;
 		}
 		Lumod.classResolver = Deflection.resolveClass;
+		Lumod.initializeLuaCallbacks = false;
+		#end
 
 		#if hl
 		sys.ssl.Socket.DEFAULT_VERIFY_CERT = false;
-		#end
-
-		#if AWAY_TEST
-		addChild(stage3D = new AwayStage());
 		#end
 	
 		#if LUA_ALLOWED Lua.set_callbacks_function(cpp.Callable.fromStaticFunction(psychlua.CallbackHandler.call)); #end
 		Controls.instance = new Controls();
 		ClientPrefs.loadDefaultKeys();
-		addChild(new FlxGame(game.width, game.height, #if COPYSTATE_ALLOWED !CopyState.checkExistingFiles() ? CopyState : #end game.initialState, #if (flixel < "5.0.0") game.zoom, #end game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
+		addChild(new FlxGame(game.width, game.height, game.initialState, #if (flixel < "5.0.0") game.zoom, #end game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
 
 		fpsVar = new FPS(10, 3, 0xFFFFFF);
 		addChild(fpsVar);
@@ -205,8 +171,9 @@ class Main extends Sprite
 			fpsVar.visible = ClientPrefs.data.showFPS;
 		}
 
-		#if linux
-		Lib.current.stage.window.setIcon(Image.fromFile("icon.png"));
+		#if (linux || mac)
+		final icon:Image = Image.fromFile("icon.png");
+		Lib.current.stage.window.setIcon(icon);
 		#end
 
 		#if html5
@@ -254,7 +221,7 @@ class Main extends Sprite
 
 		//ONLINE STUFF, BELOW CODE USE FOR BACKPORTING
 
-		var http = new haxe.Http("https://raw.githubusercontent.com/MobilePorting/Funkin-Psych-Online-Mobile/main/server_addresses.txt");
+		var http = new haxe.Http("https://raw.githubusercontent.com/Snirozu/Funkin-Psych-Online/main/server_addresses.txt");
 		http.onData = function(data:String) {
 			for (address in data.split(',')) {
 				online.GameClient.serverAddresses.push(address.trim());
@@ -348,5 +315,22 @@ class Main extends Sprite
 		        sprite.__cacheBitmap = null;
 			sprite.__cacheBitmapData = null;
 		}
+	}
+
+	public static function getTime():Float {
+		#if flash
+		return flash.Lib.getTimer();
+		#elseif ((js && !nodejs) || electron)
+		return js.Browser.window.performance.now();
+		#elseif sys
+		return Sys.time() * 1000;
+		#elseif (lime_cffi && !macro)
+		@:privateAccess
+		return cast lime._internal.backend.native.NativeCFFI.lime_system_get_timer();
+		#elseif cpp
+		return untyped __global__.__time_stamp() * 1000;
+		#else
+		return 0;
+		#end
 	}
 }

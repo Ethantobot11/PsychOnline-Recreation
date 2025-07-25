@@ -14,9 +14,7 @@ import llua.Lua;
 import flxanimate.FlxAnimate;
 #end
 
-//Mobile Controls
-import mobile.objects.MobileControls;
-import mobile.objects.IMobileControls;
+// Mobile Controls
 import mobile.objects.Hitbox;
 import mobile.objects.TouchPad;
 import mobile.objects.TouchButton;
@@ -25,11 +23,8 @@ import mobile.backend.MobileData;
 import mobile.input.MobileInputManager;
 import mobile.backend.TouchUtil;
 
-#if sys
-import sys.*;
-import sys.io.*;
-#elseif js
-import js.html.*;
+#if lumod
+import lumod.Lumod;
 #end
 
 import backend.Paths;
