@@ -29,6 +29,7 @@ class SoFunkinSubstate extends MusicBeatSubstate {
 	var searchString(default, set):String = '';
 
 	public function new(options:Array<String>, ?selected:Int = 0, callback:Int->Bool, ?iconCallback:(Int, FlxSprite)->FlxSprite) {
+		controls.isInSubstate = true;
         super();
         
 		curSelected = selected;
@@ -37,6 +38,7 @@ class SoFunkinSubstate extends MusicBeatSubstate {
 		this.iconCallback = iconCallback;
     }
 
+	var buttonS = (Controls.instance.mobileC) ? "S" : "F";
 	override function create() {
 		lerpSelected = curSelected;
 
@@ -59,7 +61,7 @@ class SoFunkinSubstate extends MusicBeatSubstate {
 		searchUnderlay.alpha = 0.6;
 		add(searchUnderlay);
 
-		searchInput = new FlxText(0, 0, "PRESS F TO SEARCH");
+		searchInput = new FlxText(0, 0, "PRESS " + buttonS + " TO SEARCH");
 		searchInput.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, RIGHT);
 		searchInput.scrollFactor.set();
 		add(searchInput);
@@ -77,6 +79,9 @@ class SoFunkinSubstate extends MusicBeatSubstate {
 			search();
 
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+
+		addTouchPad("LEFT_FULL", "A_B_S");
+		addTouchPadCamera();
 
 		super.create();
 	}
@@ -96,13 +101,13 @@ class SoFunkinSubstate extends MusicBeatSubstate {
 		}
 
 		searchInput.alpha = 0.6;
-		searchInput.text = 'PRESS F TO SEARCH';
+		searchInput.text = 'PRESS $buttonS TO SEARCH';
 		reposSearch();
 		return searchString = v;
 	}
 
 	function set_searchInputWait(v) {
-		searchInputWait = v;
+		FlxG.stage.window.textInputEnabled = searchInputWait = v;
 		searchString = searchString;
 		return searchInputWait;
 	}
@@ -205,7 +210,7 @@ class SoFunkinSubstate extends MusicBeatSubstate {
 
 		updateScrollable(groupTitle, elapsed);
 
-		if (!searchInputWait && FlxG.keys.justPressed.F) {
+		if (!searchInputWait && (touchPad.buttonS.justPressed || FlxG.keys.justPressed.F)) {
 			searchInputWait = true;
 			searchString = searchString;
 		}
@@ -239,13 +244,15 @@ class SoFunkinSubstate extends MusicBeatSubstate {
 		}
 
 		if (controls.BACK) {
+			controls.isInSubstate = false;
 			close();
 		}
 
 		if (controls.ACCEPT) {
 			if (callback(grpTexts.members[curSelected].ID))
+				controls.isInSubstate = false;
 				close();
-		}
+			}
 
 		var bullShit:Int = 0;
 		var item:Scrollable;
