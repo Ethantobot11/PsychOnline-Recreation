@@ -393,7 +393,7 @@ class ResultsSoloState extends MusicBeatState {
 			songText.setPosition(FlxG.width, 85);
 		}
 
-		if (FlxG.sound.music != null && !exiting && (controls.ACCEPT || controls.BACK)) {
+		if (FlxG.sound.music != null && !exiting && (controls.ACCEPT || controls.BACK || TouchUtil.justPressed)) {
 			exiting = true;
 			FlxTimer.globalManager.clear();
 			FlxTween.globalManager.clear();
