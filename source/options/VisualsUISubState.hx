@@ -142,14 +142,27 @@ class VisualsUISubState extends BaseOptionsMenu
 		option.decimals = 1;
 		addOption(option);
 		
-		#if !mobile
 		var option:Option = new Option('FPS Counter',
 			'If unchecked, hides FPS Counter.',
 			'showFPS',
 			'bool');
 		addOption(option);
 		option.onChange = onChangeFPSCounter;
+
+		#if native
+		var option:Option = new Option('VSync',
+			'If checked, Enables VSync fixing any screen tearing at the cost of capping the FPS to screen refresh rate.\n(Must restart the game to have an effect)',
+			'vsync',
+			'bool');
+		option.onChange = onChangeVSync;
+		addOption(option);
 		#end
+
+		var option:Option = new Option('Disable Online Shaders',
+			'If checked, disables shaders that being used on online menus.',
+			'disableOnlineShaders',
+			'bool');
+		addOption(option);
 		
 		var option:Option = new Option('Pause Screen Song:',
 			"What song do you prefer for the Pause Screen?",
@@ -314,7 +327,7 @@ class VisualsUISubState extends BaseOptionsMenu
 
 		var skin:String = Note.defaultNoteSkin;
 		var customSkin:String = skin + Note.getNoteSkinPostfix();
-		if(Paths.fileExists('images/$customSkin.png', IMAGE)) skin = customSkin;
+		if(Paths.fileExists('images/$customSkin.png', IMAGE) || Paths.fileExists('images/$customSkin.astc', BINARY)) skin = customSkin;
 
 		note.texture = skin; //Load texture and anims
 		note.reloadNote();
@@ -333,11 +346,14 @@ class VisualsUISubState extends BaseOptionsMenu
 		super.destroy();
 	}
 
-	#if !mobile
 	function onChangeFPSCounter()
 	{
 		if(Main.fpsVar != null)
 			Main.fpsVar.visible = ClientPrefs.data.showFPS;
 	}
+
+	#if native
+	function onChangeVSync()
+		lime.app.Application.current.window.vsync = ClientPrefs.data.vsync;
 	#end
 }
