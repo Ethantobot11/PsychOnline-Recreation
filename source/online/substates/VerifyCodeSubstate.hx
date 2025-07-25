@@ -11,16 +11,24 @@ class VerifyCodeSubstate extends MusicBeatSubstate {
 
     var onEnter:String->Void;
 	var blurFilter:BlurFilter;
+	var blackSprite:FlxSprite;
 	var coolCam:FlxCamera;
 
     override function create() {
         super.create();
 
-		blurFilter = new BlurFilter();
-		for (cam in FlxG.cameras.list) {
-			if (cam.filters == null)
-				cam.filters = [];
-			cam.filters.push(blurFilter);
+		if (!ClientPrefs.data.disableOnlineShaders) {
+			blurFilter = new BlurFilter();
+			for (cam in FlxG.cameras.list) {
+				if (cam.filters == null)
+					cam.filters = [];
+				cam.filters.push(blurFilter);
+			}
+		} else {
+			blackSprite = new FlxSprite();
+			blackSprite.makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
+			blackSprite.alpha = 0.75;
+			add(blackSprite);
 		}
 
 		coolCam = new FlxCamera();
@@ -59,10 +67,13 @@ class VerifyCodeSubstate extends MusicBeatSubstate {
 	override function destroy() {
 		super.destroy();
 
-		for (cam in FlxG.cameras.list) {
-			if (cam?.filters != null)
-				cam.filters.remove(blurFilter);
-		}
+		if (!ClientPrefs.data.disableOnlineShaders) {
+			for (cam in FlxG.cameras.list) {
+				if (cam?.filters != null)
+					cam.filters.remove(blurFilter);
+			}
+		} else
+			blackSprite.destroy();
 		FlxG.cameras.remove(coolCam);
 	}
 
