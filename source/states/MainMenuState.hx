@@ -176,6 +176,8 @@ class MainMenuState extends MusicBeatState
 		}
 		#end
 
+		addTouchPad('UP_DOWN', 'A_B_E');
+
 		super.create();
 	}
 
@@ -286,13 +288,11 @@ class MainMenuState extends MusicBeatState
 					});
 				}
 			}
-			#if desktop
-			else if (controls.justPressed('debug_1'))
+			else if (touchPad.buttonE.justPressed || controls.justPressed('debug_1'))
 			{
 				selectedSomethin = true;
 				FlxG.switchState(() -> new MasterEditorMenu());
 			}
-			#end
 
 			if (FlxG.mouse.justPressed && updatEBg != null && FlxG.mouse.overlaps(updatEBg)) {
 				online.substates.RequestSubstate.requestURL(Main.latestRelease.html_url, true);
