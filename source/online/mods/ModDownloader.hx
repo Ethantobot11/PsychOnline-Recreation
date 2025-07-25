@@ -1,10 +1,10 @@
 package online.mods;
 
 import haxe.Exception;
-import sys.FileSystem;
+import backend.io.PsychFileSystem as FileSystem;
 import online.mods.GameBanana;
 import online.http.HTTPClient;
-import sys.io.File;
+import backend.io.PsychFile as File;
 
 class ModDownloader {
 	public static var downloaders:Array<ModDownloader> = [];
@@ -21,7 +21,7 @@ class ModDownloader {
 	}
 	public var onStatus:DownloaderStatus->Void;
 
-	static var downloadDir:String = openfl.filesystem.File.applicationDirectory.nativePath + "/downloads/";
+	static var downloadDir:String = "";
 	var downloadPath:String;
 	var id:String;
 	public var url:String;
@@ -31,6 +31,7 @@ class ModDownloader {
 		id = FileUtils.formatFile(url);
 		downloadPath = downloadDir + id + ".dwl";
 		fileName = FileUtils.formatFile(fileName);
+		downloadDir = #if mobile Sys.getCwd() #else openfl.filesystem.File.applicationDirectory.nativePath #end + "/downloads/";
 
 		for (down in downloaders) {
 			if (down.id == id)
@@ -168,9 +169,11 @@ class ModDownloader {
 	}
 
 	public static function checkDeleteDlDir() {
+		#if !mobile
 		if (FileSystem.exists(downloadDir)) {
 			FileUtils.removeFiles(downloadDir);
 		}
+		#end
 	}
 }
 
