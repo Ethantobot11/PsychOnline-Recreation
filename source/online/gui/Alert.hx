@@ -121,8 +121,6 @@ class Alert extends Sprite {
 
 		instance = this;
 
-		if (Main.LOW_STORAGE) alert(haxe.crypto.Base64.decode('UlVOTklORyBPTiBBIFVOT0ZGSUNJQUwgQlVJTEQhISEh').toString());
-
 		if (stage != null)
 			init();
 		else
@@ -145,8 +143,6 @@ class Alert extends Sprite {
 	}
 
 	public static function alert(title:String, ?message:String, ?onClick:Void->Void) {
-		if (title.startsWith("RUNNING ON A UNOFFICIAL BUILD"))
-			Main.UNOFFICIAL_BUILD = true;
 
 		if (trashedObjects.length <= 0) {
 			trashedObjects.push(new AlertMessage());
