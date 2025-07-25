@@ -5,8 +5,8 @@ import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.util.FlxSort;
 import flixel.util.FlxDestroyUtil;
 #if MODS_ALLOWED
-import sys.io.File;
-import sys.FileSystem;
+import backend.io.PsychFile as File;
+import backend.io.PsychFileSystem as FileSystem;
 #end
 import openfl.utils.AssetType;
 import openfl.utils.Assets;
