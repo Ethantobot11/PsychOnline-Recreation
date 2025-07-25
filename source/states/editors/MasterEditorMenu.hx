@@ -3,7 +3,7 @@ package states.editors;
 import backend.WeekData;
 
 #if MODS_ALLOWED
-import sys.FileSystem;
+import backend.io.PsychFileSystem as FileSystem;
 #end
 
 import objects.Character;
@@ -76,6 +76,9 @@ class MasterEditorMenu extends MusicBeatState
 		changeSelection();
 
 		FlxG.mouse.visible = false;
+		
+		addTouchPad(#if MODS_ALLOWED "LEFT_FULL" #else "UP_DOWN" #end, "A_B");
+
 		super.create();
 	}
 
