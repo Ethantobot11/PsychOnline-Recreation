@@ -1,5 +1,6 @@
 package online.network;
 
+import openfl.Assets;
 import online.http.HTTPClient;
 import haxe.io.BytesOutput;
 import openfl.display.BitmapData;
@@ -124,12 +125,13 @@ class FunkinNetwork {
 	static function saveCredentials(json:Dynamic) {
 		trace("Saving credentials");
 		Auth.save(json.id, json.token);
-		// #if mobile
-		// StorageUtil.saveContent('recovery_token.txt', json.id + "\n" + json.secret);
-		// #else
 		// new FileReference().save(json.id + "\n" + json.secret, "recovery_token.txt");
-		// #end
 		ping();
+
+		Waiter.putPersist(() -> {
+			if (!online.gui.sidebar.SideUI.instance.active)
+				online.gui.sidebar.SideUI.instance.active = true;
+		});
 	}
 
     // public static function postResults(path:String) {
@@ -245,12 +247,10 @@ class FunkinNetwork {
 	}
 
 	public static var cacheAvatar:Map<String, Bytes> = [];
-	public static function getUserAvatar(user:String):BitmapData {
+	public static function getUserAvatar(user:String):Bytes {
 		if (cacheAvatar.exists(user)) {
 			var bytes = cacheAvatar.get(user);
-			if (bytes == null)
-				return getDefaultAvatar();
-			return BitmapData.fromBytes(bytes);
+			return bytes;
 		}
 
 		var avatarResponse = FunkinNetwork.requestAPI('/api/avatar/' + StringTools.urlEncode(user), false);
@@ -258,25 +258,26 @@ class FunkinNetwork {
 		var bytes = avatarResponse?.getBytes() ?? null;
 		if (bytes == null || !ShitUtil.isSupportedImage(bytes)) {
 			cacheAvatar.set(user, null);
-			return getDefaultAvatar();
+			return null;
 		}
 
 		try {
 			cacheAvatar.set(user, bytes);
-			return BitmapData.fromBytes(bytes);
+			return bytes;
 		}
 		catch (exc) {
 			trace(exc);
-			return getDefaultAvatar();
+			return null;
 		}
 	}
 
-	public static function getDefaultAvatar():BitmapData
-	{
-		return Paths.image('bf' + FlxG.random.int(1, 2), null, false).bitmap;
+	public static function getDefaultAvatar():BitmapData {
+		return Assets.getBitmapData('assets/images/' + 'bf' + FlxG.random.int(1, 2) + '.png');
 	}
 
 	public static function requestAPI(data:OneOf<HTTPRequest, String>, ?alertError:Bool = true):Null<HTTPResponse> {
+		GameClient.asyncUpdateAddresses();
+
 		var request:HTTPRequest;
 
 		switch (data) {
@@ -300,7 +301,7 @@ class FunkinNetwork {
 
 		if (response.isFailed()) {
 			if (alertError)
-				Waiter.put(() -> {
+				Waiter.putPersist(() -> {
 					var errorDetails = response.exception != null ? response.getErrorDetails() : (
 						response.getString() != null && response.getString()
 							.ltrim()
