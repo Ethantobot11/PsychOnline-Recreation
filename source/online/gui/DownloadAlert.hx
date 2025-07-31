@@ -53,7 +53,7 @@ class DownloadAlerts extends Sprite {
 					alert.cancelText.text = 'Cancelling...';
 				}
 				else {
-					alert.cancelText.text = 'Cancel: ${Controls.instance.mobileC ? 'Touch Here' : 'ALT + $i'} ';
+					alert.cancelText.text = 'Cancel: ALT + $i ';
 					if (i >= 10) {
 						alert.cancelText.text = "";
 					}
@@ -69,7 +69,7 @@ class DownloadAlerts extends Sprite {
 					case FAILED(exc):
 						alert.setStatus("Failed! " + exc);
 					case DOWNLOADED:
-						alert.setStatus("Preparing to install...");
+						alert.setStatus("Preparing to instal...");
 					case INSTALLING:
 						alert.setStatus("Installing...");
 					case FINISHED:
@@ -102,9 +102,6 @@ class DownloadAlerts extends Sprite {
 
 			alert.cancelBg.scaleX = alert.cancelText.textWidth;
 			alert.cancelBg.scaleY = alert.cancelText.textHeight + 5;
-
-			if (Controls.instance.mobileC && alert.cancelBg.getBounds(FlxG.stage).contains(FlxG.stage.mouseX, FlxG.stage.mouseY) && FlxG.mouse.justPressed)
-				downloader.client.cancel();
 
 			prevAlert = alert;
 			i++;
@@ -206,7 +203,7 @@ class DownloadAlert extends Sprite {
 
 	public function destroy() {
 		DownloadAlerts.instances.remove(this);
-		Waiter.put(() -> {
+		Waiter.putPersist(() -> {
 			bg = null;
 			text = null;
 			DownloadAlerts.instance.removeChild(this);
