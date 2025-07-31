@@ -1,9 +1,10 @@
 package online.states;
 
+import online.states.RoomState.LobbyCharacter;
 import flixel.util.FlxStringUtil;
 import backend.WeekData;
 import flixel.effects.FlxFlicker;
-import backend.io.PsychFileSystem as FileSystem;
+import sys.FileSystem;
 import objects.Character;
 
 #if lumod
@@ -11,31 +12,33 @@ import objects.Character;
 #end
 class ResultsState extends MusicBeatState {
 	public static var gainedPoints:Float = 0;
-
-    var disableInput = true;
+	var gainedText:FlxText;
 
 	var win:FlxSprite;
 	var lose:FlxSprite;
 	var tie:FlxSprite;
 	var back:FlxSprite;
 
-	var p1Text:Alphabet;
-	var p2Text:Alphabet;
+	var selfCharName = 'bf';
+	var selfCharMod = null;
+	var rank:Dynamic = null;
 
-	var gainedText:FlxText;
-
-	var p1Accuracy:Float;
-	var p2Accuracy:Float;
-
-	var winner:Int;
+	var characters:Map<String, LobbyCharacter> = new Map();
+	var charactersLayer:FlxTypedGroup<LobbyCharacter> = new FlxTypedGroup<LobbyCharacter>();
+	var winnerSID:String = null;
+	var winnerBfSide:Null<Bool> = null;
 
 	var chatBox:ChatBox;
-
-	var p1:Character;
-	var p2:Character;
+	var disableInput = true;
 
 	var dim:FlxSprite;
 	var spotlight:FlxSprite;
+
+	var camScrollOrigin:Array<Float> = [120, 130];
+
+	var cam:FlxCamera = new FlxCamera();
+	var camZoomedHUD:FlxCamera = new FlxCamera();
+	var camHUD:FlxCamera = new FlxCamera();
 
 	//required for lumod
 	public function new() {
@@ -43,7 +46,19 @@ class ResultsState extends MusicBeatState {
 	}
 
     override function create() {
+		FlxG.cameras.reset(cam);
+		FlxG.cameras.add(camZoomedHUD, false);
+		FlxG.cameras.add(camHUD, false);
+		FlxG.cameras.setDefaultDrawTarget(cam, true);
+		cam.bgColor.alpha = 0;
+		camHUD.bgColor.alpha = 0;
+		camZoomedHUD.bgColor.alpha = 0;
+
+		CustomFadeTransition.nextCamera = camHUD;
+
         super.create();
+
+		CustomFadeTransition.nextCamera = camHUD;
 
 		#if MODS_ALLOWED
 		Mods.pushGlobalMods();
@@ -63,72 +78,48 @@ class ResultsState extends MusicBeatState {
 			return;
 		#end
 
-		FlxG.sound.playMusic(Paths.music('title'), 0);
-		FlxG.sound.music.onComplete = () -> {
-			FlxG.sound.playMusic(Paths.music('breakfast'), 0);
-			FlxG.sound.music.fadeIn(5, 0, 0.7);
-		};
-		FlxG.sound.music.fadeIn(5, 0, 0.7);
+		// var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
+		// bg.color = 0xff1f1f1f;
+		// bg.updateHitbox();
+		// bg.screenCenter();
+		// bg.antialiasing = ClientPrefs.data.antialiasing;
+		// bg.cameras = [camBG];
+		// add(bg);
 
-		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
-		bg.color = 0xff1f1f1f;
-		bg.updateHitbox();
-		bg.screenCenter();
-		bg.antialiasing = ClientPrefs.data.antialiasing;
-		add(bg);
+		var stageFloor:FlxSprite = new FlxSprite().loadGraphic(Paths.image('stageFloor'));
+		stageFloor.setGraphicSize(stageFloor.width * 1.05);
+		stageFloor.updateHitbox();
+		stageFloor.x = -1390;
+		stageFloor.y = 600;
+		stageFloor.cameras = [cam];
+		add(stageFloor);
 
-		loadCharacter(true);
-		loadCharacter(false);
+		var curtains:FlxSprite = new FlxSprite().loadGraphic(Paths.image('curtains'));
+		curtains.setGraphicSize(curtains.width * 1.05);
+		curtains.updateHitbox();
+		curtains.x = -1020;
+		curtains.y = -270;
+		curtains.cameras = [cam];
+		curtains.scrollFactor.set(0.95, 0.85);
+		add(curtains);
 
-		p1.x = 150 + p1.positionArray[0];
-		p1.y = p1.positionArray[1] - 50;
-		add(p1);
+		var lights:FlxSprite = new FlxSprite().loadGraphic(Paths.image('lights'));
+		lights.setGraphicSize(lights.width * 0.9);
+		lights.updateHitbox();
+		lights.x = -250;
+		lights.y = -180;
+		lights.angle = 1.0;
+		lights.cameras = [cam];
+		lights.scrollFactor.set(0.6, 0.7);
+		add(lights);
 
-		p2.x = 680 + p2.positionArray[0];
-		p2.y = p2.positionArray[1] - 50;
-		add(p2);
+		cam.scroll.set(camScrollOrigin[0], camScrollOrigin[1]);
+		cam.zoom = 0.75;
+		camZoomedHUD.scroll.set(cam.scroll.x, cam.scroll.y);
+		camZoomedHUD.zoom = cam.zoom;
 
-		if (p1.animExists('resultsIdle')) {
-			p1.playAnim('resultsIdle');
-		}
-		else {
-			p1.dance();
-			p1.animation.finish();
-		}
-
-		if (p2.animExists('resultsIdle')) {
-			p2.playAnim('resultsIdle');
-		}
-		else {
-			p2.dance();
-			p2.animation.finish();
-		}
-
-		var p1Bg = new FlxSprite();
-		p1Bg.makeGraphic(1, 1, FlxColor.BLACK);
-		p1Bg.alpha = 0.0;
-		add(p1Bg);
-
-		var p2Bg = new FlxSprite();
-		p2Bg.makeGraphic(1, 1, FlxColor.BLACK);
-		p2Bg.alpha = 0.0;
-		add(p2Bg);
-
-		p1Text = new Alphabet(0, 0, "", false);
-		p1Text.antialiasing = ClientPrefs.data.antialiasing;
-		p1Text.screenCenter(X);
-		p1Text.scaleX = 0.5;
-		p1Text.scaleY = 0.5;
-		p1Text.alpha = 0;
-		add(p1Text);
-
-		p2Text = new Alphabet(0, 0, "", false);
-		p2Text.antialiasing = ClientPrefs.data.antialiasing;
-		p2Text.screenCenter(X);
-		p2Text.scaleX = 0.5;
-		p2Text.scaleY = 0.5;
-		p2Text.alpha = 0;
-		add(p2Text);
+		charactersLayer.cameras = [cam];
+		add(charactersLayer);
 
 		win = new FlxSprite();
 		win.antialiasing = ClientPrefs.data.antialiasing;
@@ -137,8 +128,9 @@ class ResultsState extends MusicBeatState {
 		win.animation.play('idle');
 		win.scale.set(0.65, 0.65);
 		win.updateHitbox();
-		win.y = 20;
+		win.y = 50;
         win.alpha = 0;
+		win.cameras = [camZoomedHUD];
 		add(win);
 
 		lose = new FlxSprite();
@@ -150,6 +142,7 @@ class ResultsState extends MusicBeatState {
 		lose.updateHitbox();
 		lose.y = win.y + 10;
 		lose.alpha = 0;
+		lose.cameras = [camZoomedHUD];
 		add(lose);
 
 		tie = new FlxSprite();
@@ -159,9 +152,10 @@ class ResultsState extends MusicBeatState {
 		tie.animation.play('idle');
 		tie.scale.set(0.6, 0.6);
 		tie.updateHitbox();
+		tie.x = 680;
 		tie.y = win.y + 10;
 		tie.alpha = 0;
-		tie.screenCenter(X);
+		tie.cameras = [camZoomedHUD];
 		add(tie);
 
 		back = new FlxSprite();
@@ -176,13 +170,15 @@ class ResultsState extends MusicBeatState {
 		back.x = 30;
 		back.y = FlxG.height - back.height - 30;
 		back.alpha = 0;
+		back.cameras = [camHUD];
 		add(back);
 
-		gainedText = new FlxText(0, 0, 0, '+ ${gainedPoints}FP');
+		gainedText = new FlxText(0, 0, 0, '');
 		gainedText.setFormat(null, 40, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		//gainedText.setPosition(FlxG.width - gainedText.width - 20, FlxG.height - gainedText.height - 20);
 		gainedText.setPosition(30, FlxG.height - gainedText.height - 25);
 		gainedText.visible = false;
+		gainedText.cameras = [camHUD];
 		add(gainedText);
 
 		#if !DEBUG_RESULTS
@@ -192,83 +188,241 @@ class ResultsState extends MusicBeatState {
 		}
 		#end
 
-		p1Accuracy = GameClient.getPlayerAccuracyPercent(getPlayer(1));
-		p2Accuracy = GameClient.getPlayerAccuracyPercent(getPlayer(2));
+		var prevWValue:Null<Float> = null;
+		var playersWValue:Map<String, Array<String>> = new Map<String, Array<String>>();
+		var switchedTimes:Int = 0;
+		var isTie:Bool = false;
 
-		switch (GameClient.room.state.winCondition) {
-			case 0:
-				winner = (p1Accuracy >= p2Accuracy ? 0 : 1);
-				if (p1Accuracy == p2Accuracy)
-					winner = -1;
-			case 1:
-				winner = (getPlayer(1).score >= getPlayer(2).score ? 0 : 1);
-				if (getPlayer(1).score == getPlayer(2).score)
-					winner = -1;
-			case 2:
-				winner = (getPlayer(1).misses <= getPlayer(2).misses ? 0 : 1);
-				if (getPlayer(1).misses == getPlayer(2).misses)
-					winner = -1;
-			case 3:
-				winner = (getPlayer(1).songPoints >= getPlayer(2).songPoints ? 0 : 1);
-				if (getPlayer(1).songPoints == getPlayer(2).songPoints)
-					winner = -1;
-			case 4:
-				winner = (getPlayer(1).maxCombo >= getPlayer(2).maxCombo ? 0 : 1);
-				if (getPlayer(1).maxCombo == getPlayer(2).maxCombo)
-					winner = -1;
-		}
+		var sumValueBySide = [0.0, 0.0];
+		var playersBySide = [0, 0];
 
-		var winnerPlayer = winner == 0 ? p1 : p2;
-		var loserPlayer = winner == 0 ? p2 : p1;
-		
-		var p1Name = getPlayer(1).name ?? "(none)";
-		if (p1Name.trim() == "")
-			p1Name = "(none)";
-		var p2Name = getPlayer(2).name ?? "(none)";
-		if (p2Name.trim() == "")
-			p2Name = "(none)";
+		for (sid => player in GameClient.room.state.players) {
+			var char = new LobbyCharacter(player, camZoomedHUD, player.verified, 5);
+			char.yBoxStepOffset = 0;
+			char.xBoxStepOffset = 380;
+			char.xCharStepOffset = 300;
+			char.profileBoxXOffset = 530;
+			char.profileBoxXOffsetP2 = 270;
+			char.profileBoxYOffset = 200;
+			var pAccuracy = GameClient.getPlayerAccuracyPercent(player);
+			char.profileBox.desc.text = 'Accuracy: ${pAccuracy}%';
+			char.profileBox.desc.text += '\nScore: ${FlxStringUtil.formatMoney(player.score, false)} - ${player.songPoints}FP';
+			char.profileBox.desc.text += '\nMax Combo: ${player.maxCombo}';
+			char.profileBox.desc.text += '\nSick: ${player.sicks}';
+			char.profileBox.desc.text += '\nGoods: ${player.goods}';
+			char.profileBox.desc.text += '\nBad: ${player.bads}';
+			char.profileBox.desc.text += '\nShits: ${player.shits}';
+			char.profileBox.desc.text += '\nMisses: ${player.misses}';
+			char.profileBox.visible = false;
+			characters.set(sid, char);
+			if (charactersLayer.members == null)
+				charactersLayer = new FlxTypedGroup<LobbyCharacter>();
+			charactersLayer.add(char);
 
-		p1Text.text = '${p1Name}\nAccuracy: ${p1Accuracy}% - ${GameClient.getPlayerRating(getPlayer(1))}\nMisses: ${getPlayer(1).misses}\nScore: ${FlxStringUtil.formatMoney(getPlayer(1).score, false)} - ${getPlayer(1).songPoints}FP';
-		p2Text.text = '${p2Name}\nAccuracy: ${p2Accuracy}% - ${GameClient.getPlayerRating(getPlayer(2))}\nMisses: ${getPlayer(2).misses}\nScore: ${FlxStringUtil.formatMoney(getPlayer(2).score, false)} - ${getPlayer(2).songPoints}FP';
-
-		p1Text.x = 176;
-		p2Text.x = 702;
-		p1Text.y = 120;
-		p2Text.y = 120;
-
-		p1Bg.scale.set(p1Text.width + 50, p1Text.height + 25);
-		p2Bg.scale.set(p2Text.width + 50, p2Text.height + 25);
-		p1Bg.updateHitbox();
-		p2Bg.updateHitbox();
-		p1Bg.setPosition(p1Text.x - 25, p1Text.y + 15);
-		p2Bg.setPosition(p2Text.x - 25, p2Text.y + 15);
-
-		win.x = (winner == 0 ? p1Bg : p2Bg).getMidpoint().x - win.width / 2;
-		lose.x = (winner == 0 ? p2Bg : p1Bg).getMidpoint().x - lose.width / 2;
-
-		for (letter in p1Text.letters) {
-			if (letter != null) {
-				letter.colorTransform.redOffset = 230;
-				letter.colorTransform.greenOffset = 230;
-				letter.colorTransform.blueOffset = 230;
+			if (char.character.animExists('resultsIdle')) {
+				char.character.playAnim('resultsIdle');
 			}
-        }
-		for (letter in p2Text.letters) {
-			if (letter != null) {
-				letter.colorTransform.redOffset = 230;
-				letter.colorTransform.greenOffset = 230;
-				letter.colorTransform.blueOffset = 230;
-            }
+			else {
+				char.character.dance();
+				char.character.animation.finish();
+			}
+
+			switch (GameClient.room.state.winCondition) {
+				case 0:
+					if (GameClient.room.state.teamMode) {
+						sumValueBySide[player.bfSide ? 1 : 0] += GameClient.getPlayerAccuracyPercent(player);
+						playersBySide[player.bfSide ? 1 : 0]++;
+					}
+
+					if (prevWValue == null || pAccuracy >= prevWValue) {
+						prevWValue = pAccuracy;
+						winnerSID = sid;
+						switchedTimes++;
+
+						var arr = playersWValue.get(prevWValue + '') ?? [];
+						arr.push(sid);
+						playersWValue.set(prevWValue + '', arr);
+					}
+				case 1:
+					if (GameClient.room.state.teamMode) {
+						sumValueBySide[player.bfSide ? 1 : 0] += player.score;
+						playersBySide[player.bfSide ? 1 : 0]++;
+					}
+
+					if (prevWValue == null || player.score >= prevWValue) {
+						prevWValue = player.score;
+						winnerSID = sid;
+						switchedTimes++;
+
+						var arr = playersWValue.get(prevWValue + '') ?? [];
+						arr.push(sid);
+						playersWValue.set(prevWValue + '', arr);
+					}
+				case 2:
+					if (GameClient.room.state.teamMode) {
+						sumValueBySide[player.bfSide ? 1 : 0] += player.misses;
+						playersBySide[player.bfSide ? 1 : 0]++;
+					}
+
+					if (prevWValue == null || player.misses <= prevWValue) {
+						prevWValue = player.misses;
+						winnerSID = sid;
+						switchedTimes++;
+
+						var arr = playersWValue.get(prevWValue + '') ?? [];
+						arr.push(sid);
+						playersWValue.set(prevWValue + '', arr);
+					}
+				case 3:
+					if (GameClient.room.state.teamMode) {
+						sumValueBySide[player.bfSide ? 1 : 0] += player.songPoints;
+						playersBySide[player.bfSide ? 1 : 0]++;
+					}
+					
+					if (prevWValue == null || player.songPoints >= prevWValue) {
+						prevWValue = player.songPoints;
+						winnerSID = sid;
+						switchedTimes++;
+
+						var arr = playersWValue.get(prevWValue + '') ?? [];
+						arr.push(sid);
+						playersWValue.set(prevWValue + '', arr);
+					}
+				case 4:
+					if (GameClient.room.state.teamMode) {
+						sumValueBySide[player.bfSide ? 1 : 0] += player.maxCombo;
+						playersBySide[player.bfSide ? 1 : 0]++;
+					}
+
+					if (prevWValue == null || player.maxCombo >= prevWValue) {
+						prevWValue = player.maxCombo;
+						winnerSID = sid;
+						switchedTimes++;
+
+						var arr = playersWValue.get(prevWValue + '') ?? [];
+						arr.push(sid);
+						playersWValue.set(prevWValue + '', arr);
+					}
+			}
+		}
+
+		var avgValueBySide = [
+			sumValueBySide[0] / playersBySide[0],
+			sumValueBySide[1] / playersBySide[1]
+		];
+
+		if (playersWValue.get(prevWValue + '').length >= 2) {
+			if (!GameClient.room.state.teamMode) {
+				isTie = true;
+			}
+			winnerSID = null;
+		}
+
+		if (GameClient.room.state.teamMode) {
+			if (winnerSID != null)
+				characters.get(winnerSID).profileBox.desc.text += '\n- BEST SOLO -';
+
+			switch (GameClient.room.state.winCondition) {
+				case 0, 1, 3, 4:
+					if (avgValueBySide[0] == avgValueBySide[1]) {
+						isTie = true;
+						winnerBfSide = null;
+						//break; // break outside loop --- stfu haxe
+					}
+					else
+						winnerBfSide = avgValueBySide[1] > avgValueBySide[0];
+
+				case 2:
+					if (avgValueBySide[0] == avgValueBySide[1]) {
+						isTie = true;
+						winnerBfSide = null;
+					}
+					else
+						winnerBfSide = avgValueBySide[1] < avgValueBySide[0];
+			}
 		}
 		
-		var mePlayer = getPlayer(GameClient.isOwner ? 1 : 2);
-		var opPlayer = getPlayer(GameClient.isOwner ? 2 : 1);
-		var meAccuracy = GameClient.isOwner ? p1Accuracy : p2Accuracy;
+		var maxOffset = 0.;
+		for (character in characters) {
+			character.character.ox = character.player.ox;
+			character.repos();
+
+			maxOffset = Math.max(maxOffset, character.character.ox);
+		}
+
+		charactersLayer.members.sort(function (a:LobbyCharacter, b:LobbyCharacter) {
+			if (a == null || b == null)
+				return 0;
+			return b.character.ox - a.character.ox;
+		});
+
+		var avgWinTeamMidX = 0.0;
+		var avgWinTeamMidXNums = 0;
+
+		var curSkin = ClientPrefs.data.modSkin ?? [null, null];
+		var charData:Dynamic = null;
+
+		if (curSkin[1] != null) {
+			selfCharMod = curSkin[0];
+			ShitUtil.tempSwitchMod(selfCharMod, () -> {
+				selfCharName = curSkin[1];
+				charData = ShitUtil.getJson('characters_results/${selfCharName}');
+			});
+		}
+
+		if (charData == null) {
+			selfCharMod = null;
+			selfCharName = 'bf';
+			charData = ShitUtil.getJson('characters_results/${selfCharName}');
+		}
+		
+		if (!isTie) {
+			if (GameClient.room.state.teamMode) {
+				for (character in characters) {
+					if (character.player.bfSide == winnerBfSide) {
+						avgWinTeamMidX += character.profileBox.getMidpoint().x;
+						avgWinTeamMidXNums++;
+					}
+				}
+
+				win.x = (avgWinTeamMidX / avgWinTeamMidXNums) - win.width / 2;
+
+				if (winnerBfSide == characters.get(GameClient.room.sessionId).player.bfSide) {
+					rank = charData.GOOD;
+					if (winnerSID == GameClient.room.sessionId) {
+						rank = charData.EXCELLENT;
+					}
+				}
+				else {
+					rank = charData.SHIT;
+				}
+			}
+			else {
+				win.x = characters.get(winnerSID).profileBox.getMidpoint().x - win.width / 2;
+
+				if (winnerSID == GameClient.room.sessionId) {
+					rank = charData.GOOD;
+				}
+				else {
+					rank = charData.SHIT;
+				}
+			}
+		}
+
+		playResultsMusic();
+		FlxG.sound.music.stop();
+
+		// #if DISCORD_ALLOWED
+		// DiscordClient.changePresence(
+		// 	'Results! (Online) - ${!GameClient.room.state.isPrivate ? 'VS. ' + opPlayer.name : ''}', 
+		// 	'${mePlayer.score} - ${gainedPoints}FP (${meAccuracy}%)'
+		// );
+		// #end
 
 		#if DISCORD_ALLOWED
 		DiscordClient.changePresence(
-			'Results! (Online) - ${!GameClient.room.state.isPrivate ? 'VS. ' + opPlayer.name : ''}', 
-			'${mePlayer.score} - ${gainedPoints}FP (${meAccuracy}%)'
+			'Results! (Online)',
+			''
 		);
 		#end
 
@@ -276,110 +430,129 @@ class ResultsState extends MusicBeatState {
 		dim.makeGraphic(Std.int(FlxG.width), Std.int(FlxG.height), FlxColor.BLACK);
 		dim.scrollFactor.set(0, 0);
 		dim.alpha = 1;
+		dim.cameras = [cam];
+		dim.scale.set(2.0, 2.0);
 		add(dim);
 
 		Paths.setCurrentLevel('week1');
-		spotlight = new FlxSprite(0, -250).loadGraphic(Paths.image('spotlight'));
-		spotlight.alpha = 0.375;
+		spotlight = new FlxSprite(0, 200).loadGraphic(Paths.image('erect/brightLightSmall'));
+		spotlight.setGraphicSize(spotlight.width * 1.3);
+		spotlight.updateHitbox();
+		spotlight.alpha = 0.35;
 		spotlight.blend = ADD;
 		spotlight.visible = false;
-		spotlight.x = winner == 0 ? 70 : 630;
+		if (!isTie) {
+			if (GameClient.room.state.teamMode) {
+				spotlight.x = (avgWinTeamMidX / avgWinTeamMidXNums) - spotlight.width / 2;
+			}
+			else {
+				spotlight.x = characters.get(winnerSID).profileBox.getMidpoint().x - spotlight.width / 2;
+			}
+		}
+		spotlight.x -= 20;
+		spotlight.cameras = [cam];
 		add(spotlight);
 
 		chatBox = new ChatBox(camera);
+		chatBox.cameras = [camHUD];
 		add(chatBox);
 
-		FlxTween.tween(dim, {alpha: 0.25}, 2, {ease: FlxEase.quadInOut});
-		FlxTween.tween(back, {alpha: 1}, 1, {ease: FlxEase.quartInOut, startDelay: 4.0});
+		FlxTween.tween(dim, {alpha: 0.15}, 2, {ease: FlxEase.quadInOut});
+		FlxTween.tween(back, {alpha: 1}, 1, {ease: FlxEase.quartInOut, startDelay: 2.0});
 
-		new FlxTimer().start(5, (t) -> {
+		new FlxTimer().start(3, (t) -> {
 			disableInput = false;
 		});
 
-		new FlxTimer().start(2, (t) -> {
+		new FlxTimer().start(1, (t) -> {
+			for (sid => player in characters) {
+				player.profileBox.visible = true;
+				player.profileBox.avatar.visible = player.player.verified;
+				player.character.noAnimationBullshit = true;
+				if (isTie) {
+					if (player.character.animExists('tie')) {
+						player.character.playAnim("tie");
 
-			if (winner > -1) {
-				if (winnerPlayer.animExists('win')) {
-					winnerPlayer.playAnim("win");
+						if (player.character.animExists('tieLoop')) {
+							player.character.animation.finishCallback = n -> {
+								player.character.animation.finishCallback = null;
+								player.character.playAnim("tieLoop");
+							};
+						}
+					}
+					else {
+						player.character.playAnim("hurt");
+					}
+					continue;
+				}
 
-					if (winnerPlayer.animExists('winLoop')) {
-						winnerPlayer.animation.finishCallback = n -> {
-							winnerPlayer.animation.finishCallback = null;
-							winnerPlayer.playAnim("winLoop");
-						};
+				if ((!GameClient.room.state.teamMode && sid == winnerSID) || (GameClient.room.state.teamMode && player.player.bfSide == winnerBfSide)) {
+					if (player.character.animExists('win')) {
+						player.character.playAnim("win");
+	
+						if (player.character.animExists('winLoop')) {
+							player.character.animation.finishCallback = n -> {
+								player.character.animation.finishCallback = null;
+								player.character.playAnim("winLoop");
+							};
+						}
+					}
+					else {
+						player.character.playAnim("hey");
 					}
 				}
 				else {
-					winnerPlayer.playAnim("hey");
-				}
+					if (player.character.animExists('lose')) {
+						player.character.playAnim("lose");
 
-				if (loserPlayer.animExists('lose')) {
-					loserPlayer.playAnim("lose");
-
-					if (loserPlayer.animExists('loseLoop')) {
-						loserPlayer.animation.finishCallback = n -> {
-							loserPlayer.animation.finishCallback = null;
-							loserPlayer.playAnim("loseLoop");
-						};
+						if (player.character.animExists('loseLoop')) {
+							player.character.animation.finishCallback = n -> {
+								player.character.animation.finishCallback = null;
+								player.character.playAnim("loseLoop");
+							};
+						}
 					}
-				}
-				else {
-					loserPlayer.playAnim("hurt");
+					else {
+						player.character.playAnim("hurt");
+					}
 				}
 			}
-			else {
-				if (p1.animExists('tie')) {
-					p1.playAnim("tie");
 
-					if (p1.animExists('tieLoop')) {
-						p1.animation.finishCallback = n -> {
-							p1.animation.finishCallback = null;
-							p1.playAnim("tieLoop");
-						};
-					}
-				}
-				else {
-					p1.playAnim("hurt");
-				}
-
-				if (p2.animExists('tie')) {
-					p2.playAnim("tie");
-
-					if (p2.animExists('tieLoop')) {
-						p2.animation.finishCallback = n -> {
-							p2.animation.finishCallback = null;
-							p2.playAnim("tieLoop");
-						};
-					}
-				}
-				else {
-					p2.playAnim("hurt");
-				}
-			}
-			p1.noAnimationBullshit = true;
-			p2.noAnimationBullshit = true;
-
-			FlxTween.tween(p1Text, {alpha: 1}, 1, {ease: FlxEase.quartInOut, startDelay: 1});
-			FlxTween.tween(p2Text, {alpha: 1}, 1, {ease: FlxEase.quartInOut, startDelay: 1});
-			FlxTween.tween(p1Bg, {alpha: 0.5}, 1, {ease: FlxEase.quartInOut, startDelay: 1});
-			FlxTween.tween(p2Bg, {alpha: 0.5}, 1, {ease: FlxEase.quartInOut, startDelay: 1});
-
-			if (winner > -1) {
+			if (!isTie) {
 				FlxTween.tween(win, {alpha: 1}, 0.5, {ease: FlxEase.quadInOut});
-				FlxTween.tween(lose, {alpha: 1, angle: 3}, 0.5, {ease: FlxEase.quadInOut});
-				FlxTween.tween(lose, {angle: 0}, 0.2, {ease: FlxEase.quadInOut});
 				if (ClientPrefs.data.flashing) {
 					flickerLoop();
 				}
 				spotlight.visible = true;
 			}
 			else {
-				FlxTween.tween(dim, {alpha: 0}, 1, {ease: FlxEase.quadInOut});
 				FlxTween.tween(tie, {alpha: 1}, 0.5, {ease: FlxEase.quadInOut});
 			}
 
+			playResultsMusic();
+
+			// FlxTween.tween(p1Text, {alpha: 1}, 1, {ease: FlxEase.quartInOut, startDelay: 1});
+			// FlxTween.tween(p2Text, {alpha: 1}, 1, {ease: FlxEase.quartInOut, startDelay: 1});
+			// FlxTween.tween(p1Bg, {alpha: 0.5}, 1, {ease: FlxEase.quartInOut, startDelay: 1});
+			// FlxTween.tween(p2Bg, {alpha: 0.5}, 1, {ease: FlxEase.quartInOut, startDelay: 1});
+
+			// if (winner > -1) {
+			// 	FlxTween.tween(win, {alpha: 1}, 0.5, {ease: FlxEase.quadInOut});
+			// 	FlxTween.tween(lose, {alpha: 1, angle: 3}, 0.5, {ease: FlxEase.quadInOut});
+			// 	FlxTween.tween(lose, {angle: 0}, 0.2, {ease: FlxEase.quadInOut});
+			// 	if (ClientPrefs.data.flashing) {
+			// 		flickerLoop();
+			// 	}
+			// 	spotlight.visible = true;
+			// }
+			// else {
+			// 	FlxTween.tween(dim, {alpha: 0}, 1, {ease: FlxEase.quadInOut});
+			// 	FlxTween.tween(tie, {alpha: 1}, 0.5, {ease: FlxEase.quadInOut});
+			// }
+
 			if (gainedPoints > 0) {
 				gainedText.visible = true;
+				gainedText.text = '+ ${gainedPoints}FP';
 				FlxG.sound.play(Paths.sound('fap'));
 				if (ClientPrefs.data.flashing)
 					FlxFlicker.flicker(gainedText, 0.4, 0.05, true);
@@ -395,7 +568,11 @@ class ResultsState extends MusicBeatState {
 		});
 
 		registerMessages();
-		addTouchPad('NONE', 'B_C_T');
+		FlxG.mouse.visible = true;
+
+		var debugPoser = new online.objects.DebugPosHelper();
+		debugPoser.cameras = [camHUD];
+		add(debugPoser);
     }
 
 	function registerMessages() {
@@ -404,12 +581,15 @@ class ResultsState extends MusicBeatState {
 		if (GameClient.isConnected()) {
 			GameClient.send("status", "Viewing results");
 
-			GameClient.room.onMessage("charPlay", function(message:Array<Dynamic>) {
+			GameClient.room.onMessage("charPlay", function(_message:Array<Dynamic>) {
+				var sid:String = _message[0];
+				var message:Array<Dynamic> = _message[1];
+
 				Waiter.put(() -> {
 					if (message == null || message[0] == null)
 						return;
 
-					(GameClient.isOwner ? p2 : p1).playAnim(message[0], true);
+					characters.get(sid).character.playAnim(message[0], true);
 				});
 			});
 		}
@@ -424,8 +604,43 @@ class ResultsState extends MusicBeatState {
 		});
 	}
 
+	function playResultsMusic() {
+		if (rank == null) {
+			FlxG.sound.playMusic(Paths.music('title'), 0);
+			FlxG.sound.music.onComplete = () -> {
+				var msc = null;
+				if (ClientPrefs.data.modSkin != null) {
+					ShitUtil.tempSwitchMod(ClientPrefs.data.modSkin[0], () -> {
+						msc = Paths.music(Paths.formatToSongPath('breakfast-' + ClientPrefs.data.modSkin[1]));
+					});
+				}
+				msc ??= Paths.music(Paths.formatToSongPath('breakfast'));
+				FlxG.sound.playMusic(msc, 0);
+				FlxG.sound.music.fadeIn(5, 0, 0.7);
+			};
+			FlxG.sound.music.fadeIn(5, 0, 0.7);
+			return;
+		}
+
+		var msc = null;
+		ShitUtil.tempSwitchMod(selfCharMod, () -> {
+			msc = Paths.music('${rank.sound}/${rank.sound}-${selfCharName}');
+		});
+		if (msc == null)
+			msc = Paths.music('${rank.sound}/${rank.sound}');
+
+		FlxG.sound.playMusic(msc, 0);
+		FlxG.sound.music.fadeIn(5, 0, 0.7);
+	}
+
 	override function update(elapsed) {
         super.update(elapsed);
+
+		cam.scroll.set(
+			FlxMath.lerp(cam.scroll.x, camScrollOrigin[0] + (FlxG.mouse.screenX - FlxG.width / 2) * 0.1, elapsed * 2), 
+			FlxMath.lerp(cam.scroll.y, camScrollOrigin[1] + (FlxG.mouse.screenY - FlxG.height / 2) * 0.05, elapsed * 2)
+		);
+		camZoomedHUD.scroll.set(cam.scroll.x, cam.scroll.y);
 
 		#if lumod
 		if (FlxG.keys.justPressed.F12) {
@@ -459,7 +674,7 @@ class ResultsState extends MusicBeatState {
 
 			if (!chatBox.focused && controls.TAUNT) {
 				var altSuffix = FlxG.keys.pressed.ALT ? '-alt' : '';
-				(GameClient.isOwner ? p1 : p2).playAnim('taunt' + altSuffix, true);
+				characters.get(GameClient.room.sessionId).character.playAnim('taunt' + altSuffix, true);
 				if (GameClient.isConnected())
 					GameClient.send("charPlay", ["taunt" + altSuffix]);
 			}
@@ -469,50 +684,4 @@ class ResultsState extends MusicBeatState {
 				back.animation.play('black');
         }
     }
-
-	function loadCharacter(isP1:Bool, ?enableDownload:Bool = true) {
-		var oldModDir = Mods.currentModDirectory;
-
-		if (isP1) {
-			if (p1 != null)
-				p1.destroy();
-			p1 = null;
-
-			if (FileSystem.exists(Paths.mods(getPlayer(1).skinMod))) {
-				if (getPlayer(1).skinMod != null)
-					Mods.currentModDirectory = getPlayer(1).skinMod;
-
-				if (getPlayer(1).skinName != null)
-					p1 = new Character(0, 0, getPlayer(1).skinName);
-			}
-
-			if (p1 == null)
-				p1 = new Character(0, 0, "default");
-		}
-		else {
-			if (p2 != null)
-				p2.destroy();
-			p2 = null;
-
-			if (FileSystem.exists(Paths.mods(getPlayer(2).skinMod))) {
-				if (getPlayer(2).skinMod != null)
-					Mods.currentModDirectory = getPlayer(2).skinMod;
-
-				if (getPlayer(2).skinName != null)
-					p2 = new Character(0, 0, getPlayer(2).skinName + "-player", true);
-			}
-
-			if (p2 == null)
-				p2 = new Character(/*770*/ 0, 0, "default-player", true);
-		}
-
-		Mods.currentModDirectory = oldModDir;
-	}
-
-	static function getPlayer(num:Int) {
-		if (GameClient.isConnected())
-			return num == 2 ? GameClient.room.state.player2 : GameClient.room.state.player1;
-		else 
-			return num == 2 ? Debug.fakePlayer2 : Debug.fakePlayer1;
-	}
 }
