@@ -4,7 +4,7 @@ import haxe.io.Path;
 import json2object.JsonParser;
 import backend.Song.SwagSong;
 import lime.ui.FileDialog;
-import backend.io.PsychFile as File;
+import sys.io.File;
 import haxe.Json;
 import online.util.vslice.VConstDu;
 
