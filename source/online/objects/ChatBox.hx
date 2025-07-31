@@ -8,22 +8,20 @@ import lime.system.Clipboard;
 
 class ChatBox extends FlxTypedSpriteGroup<FlxSprite> {
 	public static var instance:ChatBox;
-	final accept:String = Controls.instance.mobileC ? "RETURN" : "ACCEPT";
-	final tab:String = Controls.instance.mobileC ? "C" : "TAB";
 	var prevMouseVisibility:Bool = false;
     public var focused(default, set):Bool = false;
 	function set_focused(v) {
 		if (v) {
 			prevMouseVisibility = FlxG.mouse.visible;
 			FlxG.mouse.visible = true;
-			typeTextHint.text = "(Type something to input the message, " + accept + " to send)";
+			typeTextHint.text = "(Type something to input the message, ACCEPT to send)";
 			typeBg.colorTransform.alphaOffset = 0;
 			typeBg.scale.x = FlxG.width;
 			ClientPrefs.toggleVolumeKeys(false);
 		}
 		else {
 			FlxG.mouse.visible = prevMouseVisibility;
-			typeTextHint.text = '(Press $tab to open chat!)';
+			typeTextHint.text = "(Press TAB to open chat!)";
 			typeBg.colorTransform.alphaOffset = -100;
 			typeBg.scale.x = Std.int(bg.width);
 			ClientPrefs.toggleVolumeKeys(true);
@@ -41,16 +39,20 @@ class ChatBox extends FlxTypedSpriteGroup<FlxSprite> {
 	var chatHeight:Float;
 	var onCommand:(String, Array<String>) -> Bool;
 
-	static var lastMessages:Array<Dynamic> = [];
+	static var savedMessages:Array<Dynamic> = [];
 	var dwnMsgToClick:Map<NoteSkinDownloadMessage, ()->Void> = new Map<NoteSkinDownloadMessage, ()->Void>();
 
 	var initMessage:String = "See /help for the list of commands!";
 
-	public static function addMessage(raw:Dynamic) {
-		if (instance == null) {
-			lastMessages.push(raw);
-			return;
+	public static function addMessage(raw:Dynamic, ?noSave:Bool = false) {
+		if (!noSave) {
+			savedMessages.push(raw);
+			if (savedMessages.length > 40)
+				savedMessages.shift();
 		}
+
+		if (instance == null)
+			return;
 
 		instance.targetAlpha = 5;
 
@@ -78,13 +80,13 @@ class ChatBox extends FlxTypedSpriteGroup<FlxSprite> {
 	public static function clearLogs() {
 		if (instance?.chatGroup != null)
 			instance.chatGroup.clear();
-		lastMessages = [];
+		savedMessages = [];
 	}
 
 	public static function tryRegisterLogs() {
 		if (GameClient.isConnected())
 			GameClient.room.onMessage("log", function(message) {
-				Waiter.put(() -> {
+				Waiter.putPersist(() -> {
 					addMessage(message);
 					var sond = FlxG.sound.play(Paths.sound('scrollMenu'));
 					sond.pitch = 1.5;
@@ -119,11 +121,10 @@ class ChatBox extends FlxTypedSpriteGroup<FlxSprite> {
 		add(typeBg);
 
 		chatGroup = new FlxTypedSpriteGroup<ChatMessage>();
-		addMessage(initMessage);
-		for (msg in lastMessages) {
-			addMessage(msg);
+		addMessage(initMessage, true);
+		for (msg in savedMessages) {
+			addMessage(msg, true);
 		}
-		lastMessages = [];
 		add(chatGroup);
 
 		typeText = new InputText(0, 0, typeBg.width, text -> {
@@ -159,11 +160,6 @@ class ChatBox extends FlxTypedSpriteGroup<FlxSprite> {
     }
 
 	override function destroy() {
-		for (msg in chatGroup) {
-			if (msg.text != initMessage)
-				lastMessages.push(msg.text);
-		}
-
 		if(focused)
 			ClientPrefs.toggleVolumeKeys(true);
 
@@ -174,7 +170,7 @@ class ChatBox extends FlxTypedSpriteGroup<FlxSprite> {
 
     override function update(elapsed) {
 		if (focused || alpha > 0) {
-			if (FlxG.keys.justPressed.ESCAPE #if android || FlxG.android.justReleased.BACK #end) {
+			if (FlxG.keys.justPressed.ESCAPE) {
 				focused = false;
 			}
 
@@ -243,9 +239,8 @@ class ChatBox extends FlxTypedSpriteGroup<FlxSprite> {
 
         super.update(elapsed);
 
-		if (MusicBeatState.getState().touchPad?.buttonC?.justPressed == true || FlxG.keys.justPressed.TAB) {
+		if (FlxG.keys.justPressed.TAB) {
 			focused = !focused;
-			#if !android FlxG.stage.window.textInputEnabled = focused; #end
 		}
 
 		typeTextHint.visible = focused ? (typeText.text.length <= 0) : true;
