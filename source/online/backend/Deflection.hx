@@ -116,10 +116,10 @@ class Deflection {
 
 		blacklist.push(CompileTime);
 
-		#if android
-		// `lime._internal.backend.android.JNICache`
+		#if (extension_androidtools)
+		// `android.jni.JNICache`
 		// Same as `lime.system.JNI`
-		blacklist.push(lime._internal.backend.android.JNICache);
+		blacklist.push(android.jni.JNICache);
 		#end
 
 		classBlacklist = blacklist;
