@@ -1,15 +1,14 @@
 package online.replay;
 
 import states.FreeplayState;
-import mobile.input.MobileInputID;
 import flixel.input.gamepad.FlxGamepad;
 import online.network.Leaderboard;
 import haxe.crypto.Md5;
 import backend.Song;
 import backend.Highscore;
-import backend.io.PsychFileSystem as FileSystem;
+import sys.FileSystem;
 import haxe.Json;
-import backend.io.PsychFile as File;
+import sys.io.File;
 import flixel.input.gamepad.FlxGamepadInputID;
 import flixel.input.keyboard.FlxKey;
 import openfl.events.KeyboardEvent;
@@ -96,7 +95,7 @@ class ReplayRecorder extends FlxBasic {
 		}
 
 		state.add(this);
-
+        
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, onKeyUp);
 
@@ -164,53 +163,6 @@ class ReplayRecorder extends FlxBasic {
 				continue;
 			data.inputs.push([time, id, move]);
 		}
-	}
-
-	function recordKeyMobileC(time:Float, IDs:Array<MobileInputID>, move:Int) {
-		if (IDs == null || IDs.length < 0)
-			return;
-
-		if(IDs.length == 1 && !REGISTER_BINDS.contains(IDs[0].toString().toLowerCase()))
-		{
-			switch(IDs[0])
-			{
-				case EXTRA_1:
-					data.inputs.push([time, 'KEY:SPACE', move]);
-				case EXTRA_2:
-					data.inputs.push([time, 'KEY:SHIFT', move]);
-				default:
-					// nothing
-			}
-			return;
-		}
-
-		for (id in IDs)
-		{
-			var idName:String = id.toString().toLowerCase();
-
-			if (idName == null || state.paused || !REGISTER_BINDS.contains(idName))
-				continue;
-
-			data.inputs.push([time, idName, move]);
-		}
-	}
-
-	public function setupMobileCRecorder():Void {
-		var hitbox:Hitbox = state.controls.requestedHitbox;
-		if (hitbox != null) {
-			hitbox.onButtonDown.add((button:TouchButton, ids:Array<MobileInputID>) -> recordKeyMobileC(Conductor.songPosition, ids, 0));
-			hitbox.onButtonUp.add((button:TouchButton, ids:Array<MobileInputID>) -> recordKeyMobileC(Conductor.songPosition, ids, 1));
-		}
-		else
-			trace("Tried to init replay recorder for mobile controls but failed.");
-
-		var touchPad:TouchPad = state.controls.requestedInstance.touchPad;
-		if (touchPad != null) {
-			touchPad.onButtonDown.add((button:TouchButton, ids:Array<MobileInputID>) -> recordKeyMobileC(Conductor.songPosition, ids, 0));
-			touchPad.onButtonUp.add((button:TouchButton, ids:Array<MobileInputID>) -> recordKeyMobileC(Conductor.songPosition, ids, 1));
-		}
-		else
-			trace("Tried to init replay recorder for touch pad but failed.");
 	}
 
     public function save():Float {
