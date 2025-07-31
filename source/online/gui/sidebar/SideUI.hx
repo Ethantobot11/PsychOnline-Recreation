@@ -1,6 +1,8 @@
 package online.gui.sidebar;
 
-import backend.io.PsychFileSystem as FileSystem;
+import backend.InputFormatter;
+import flixel.input.keyboard.FlxKey;
+import sys.FileSystem;
 import online.gui.sidebar.tabs.*;
 import online.gui.sidebar.obj.*;
 import online.network.FunkinNetwork;
@@ -30,6 +32,7 @@ class SideUI extends WSprite {
 	public var upBar:Bitmap;
 	public var leftBar:Bitmap;
 	public var welcome:TextField;
+	public var tip:TextField;
 	public var tabTitle:TextField;
 
 	var tabButtons:Array<Bitmap> = [];
@@ -67,12 +70,9 @@ class SideUI extends WSprite {
 
 		instance = this;
 
-		try {
-			for (file in FileSystem.readDirectory('assets/images/sidebar')) {
-				Paths.excludeAsset('assets/images/sidebar/' + file);
-			}
+		for (file in FileSystem.readDirectory('assets/images/sidebar')) {
+			Paths.excludeAsset('assets/images/sidebar/' + file);
 		}
-		catch (e:Dynamic) {}
 
 		if (stage != null)
 			init();
@@ -97,6 +97,10 @@ class SideUI extends WSprite {
 
 		welcome = this.createText(15, 15, 20);
 		addChild(welcome);
+
+		tip = this.createText(15, 15, 15);
+		tip.setText('Use ' + InputFormatter.getKeyName(cast(ClientPrefs.keyBinds.get('sidebar')[0], FlxKey)) + ' to toggle the Network Sidebar!', upBar.width, 0xFF535353);
+		addChild(tip);
 
 		tabTitle = this.createText(15, 15, 20);
 		addChild(tabTitle);
@@ -230,6 +234,9 @@ class SideUI extends WSprite {
 			welcome.setText(FunkinNetwork.loggedIn ? 'Logged as ${FunkinNetwork.nickname}' : 'Not logged in', upBar.width);
 			welcome.x = upBar.width - welcome.width - 50;
 			welcome.y = upBar.height / 2 - welcome.getTextHeight() / 2 - 5;
+
+			tip.x = upBar.width / 2 - tip.width / 2;
+			tip.y = welcome.y;
 
 			Actuate.tween(this, 1, {alpha: 1});
 			Actuate.tween(upBar, 0.2, {y: 0}).onComplete(() -> {
