@@ -71,8 +71,6 @@ class FindRoomState extends MusicBeatState {
 		emptyMessage.screenCenter();
 		emptyMessage.visible = false;
 		add(emptyMessage);
-
-		addTouchPad('UP_DOWN', 'B_C');
     }
 
     override function update(elapsed) {
@@ -81,7 +79,7 @@ class FindRoomState extends MusicBeatState {
 		else if (controls.UI_DOWN_P)
 			selected++;
 
-        if (touchPad.buttonC.justPressed || FlxG.keys.justPressed.R) {
+        if (FlxG.keys.justPressed.R) {
 			@:privateAccess refreshTimer._timeCounter = 0;
 			refreshRooms();
         }
@@ -211,7 +209,7 @@ class RoomBox extends FlxSpriteGroup {
 			FindRoomState.instance.camFollow.setPosition(hitbox.getMidpoint().x, hitbox.getMidpoint().y);
 
 			if (FindRoomState.instance.controls.ACCEPT || (FlxG.mouse.justPressed && FlxG.mouse.overlaps(hitbox))) {
-				GameClient.joinRoom('$code;${FindRoomState.instance.getAddress()}', (err) -> Waiter.put(() -> {
+				GameClient.joinRoom('$code;${FindRoomState.instance.getAddress()}', (err) -> Waiter.putPersist(() -> {
 					if (err != null) {
 						return;
 					}
