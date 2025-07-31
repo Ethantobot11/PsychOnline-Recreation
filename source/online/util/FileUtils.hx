@@ -1,8 +1,8 @@
 package online.util;
 
-import backend.io.PsychFile as File;
+import sys.io.File;
 import haxe.io.Path;
-import backend.io.PsychFileSystem as FileSystem;
+import sys.FileSystem;
 
 // can haxe have useful classes like in java please this language is BORING AND UNNERVING
 class FileUtils {
@@ -94,7 +94,7 @@ class FileUtils {
 	 * Safe way to join filesystem files/directories (by one item at a time) by filtering invalid characters using `formatFile`
 	 */
 	public static function joinFiles(paths:Array<String>):String {
-		return Path.join([for (path in paths) formatFile(path)]);
+		return Path.join([for (path in paths) formatFile(path, true)]);
 	}
 
 	public static function joinNativePath(paths:Array<String>):String {
