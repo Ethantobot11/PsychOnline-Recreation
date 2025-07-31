@@ -1,6 +1,7 @@
 package online.http;
 
 import htmlparser.HtmlDocument;
+import htmlparser.HtmlNodeElement;
 
 class URLScraper {
     public static function downloadFromGDrive(url:String, ?onSuccess:String->Void) {
@@ -10,27 +11,43 @@ class URLScraper {
 
 	public static function downloadFromMediaFire(url:String, ?onSuccess:String->Void) {
 		Thread.run(() -> {
-			var response = new HTTPClient(url).request();
+			try {
+				var response = new HTTPClient(url).request();
 
-			if (response.isFailed()) {
-				Waiter.put(() -> {
-					Alert.alert("Download failed!", "Couldn't connect to MediaFire!\n" + 'Status: ${ShitUtil.prettyStatus(response.status)}');
-				});
-				return;
-			}
-
-			var doc = new HtmlDocument(response.getString(), true);
-			var titles = doc.find("#downloadButton");
-
-			Waiter.put(() -> {
-				if (titles[0] == null) {
-					Waiter.put(() -> {
-						Alert.alert("Download failed!", "Can't get the download link for this MediaFire file!");
+				if (response.isFailed()) {
+					Waiter.putPersist(() -> {
+						Alert.alert("MediaFire Download failed!", "Couldn't connect to MediaFire!\n" + 'Status: ${ShitUtil.prettyStatus(response.status)}');
 					});
 					return;
 				}
-				OnlineMods.startDownloadMod(url, titles[0].getAttribute("href"), null, onSuccess, [], url);
-			});
+
+				var doc:HtmlDocument = new HtmlDocument(response.getString(), true);
+
+				var scrambledURL:Null<String> = null;
+				for(node in doc.find('#downloadButton'))
+				{
+					if(node.hasAttribute('data-scrambled-url'))
+						scrambledURL = node.getAttribute('data-scrambled-url');
+				}
+
+				if (scrambledURL == null) {
+					Waiter.putPersist(() -> {
+						Alert.alert("MediaFire Download failed!", "Can't get the download link for this MediaFire file!");
+					});
+					return;
+				}
+
+				var unscrambledURL:String = haxe.crypto.Base64.decode(scrambledURL).toString();
+
+				Waiter.putPersist(() -> {
+					OnlineMods.startDownloadMod(url, unscrambledURL, null, onSuccess, [], url);
+				});
+			}
+			catch (exc) {
+				Waiter.putPersist(() -> {
+					Alert.alert("MediaFire Download failed!", ShitUtil.prettyError(exc));
+				});
+			}
 		});
 	}
 
