@@ -2,8 +2,8 @@ package online.backend;
 
 #if HSCRIPT_ALLOWED
 import tea.SScript;
-import backend.io.PsychFile as File;
-import backend.io.PsychFileSystem as FileSystem;
+import sys.io.File;
+import sys.FileSystem;
 
 class SyncScript extends SScript {
 	public static var syncScript:SyncScript;
@@ -14,7 +14,7 @@ class SyncScript extends SScript {
 		if (threaded) {
 			Thread.run(() -> {
 				var fetch = retrieveScript();
-				online.backend.Waiter.put(() -> {
+				online.backend.Waiter.putPersist(() -> {
 					loadScript(fetch, onDone);
 				});
 			});
@@ -60,6 +60,8 @@ class SyncScript extends SScript {
 
 	override function preset() {
 		super.preset();
+
+		notAllowedClasses = Deflection.classBlacklist.copy();
 
 		set("data", data);
 		set("print", s -> Sys.println(s));
