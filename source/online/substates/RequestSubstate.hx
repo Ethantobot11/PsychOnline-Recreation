@@ -24,7 +24,6 @@ class RequestSubstate extends MusicBeatSubstate {
 	var curSelected:Int = -1;
 
 	var blurFilter:BlurFilter;
-	var blackSprite:FlxSprite;
 	var coolCam:FlxCamera;
 
 	public static function requestURL(url:String, ?prompt:String = "Do you want to open this link", ?disableTrusting:Bool = false) {
@@ -90,19 +89,12 @@ class RequestSubstate extends MusicBeatSubstate {
 
 	override function create() {
 		super.create();
-
-		if (!ClientPrefs.data.disableOnlineShaders) {
-			blurFilter = new BlurFilter();
-			for (cam in FlxG.cameras.list) {
-				if (cam.filters == null)
-					cam.filters = [];
-				cam.filters.push(blurFilter);
-			}
-		} else {
-			blackSprite = new FlxSprite();
-			blackSprite.makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
-			blackSprite.alpha = 0.75;
-			add(blackSprite);
+		
+		blurFilter = new BlurFilter();
+		for (cam in FlxG.cameras.list) {
+			if (cam.filters == null)
+				cam.filters = [];
+			cam.filters.push(blurFilter);
 		}
 
 		coolCam = new FlxCamera();
@@ -195,13 +187,10 @@ class RequestSubstate extends MusicBeatSubstate {
 	override function destroy() {
 		super.destroy();
 
-		if (!ClientPrefs.data.disableOnlineShaders) {
-			for (cam in FlxG.cameras.list) {
-				if (cam?.filters != null)
-					cam.filters.remove(blurFilter);
-			}
-		} else
-			blackSprite.destroy();
+		for (cam in FlxG.cameras.list) {
+			if (cam?.filters != null)
+				cam.filters.remove(blurFilter);
+		}
 		FlxG.cameras.remove(coolCam);
 	}
 
