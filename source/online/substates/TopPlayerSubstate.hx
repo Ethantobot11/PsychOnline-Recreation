@@ -9,7 +9,6 @@ class TopPlayerSubstate extends MusicBeatSubstate {
 	var topShit:Scoreboard = new Scoreboard(FlxG.width - 300, 35, 15, ["PLAYER", "POINTS"]);
 
 	var blurFilter:BlurFilter;
-	var blackSprite:FlxSprite;
 	var coolCam:FlxCamera;
 
     var curPage:Int = 0;
@@ -18,18 +17,11 @@ class TopPlayerSubstate extends MusicBeatSubstate {
 	override function create() {
 		super.create();
 
-		if (!ClientPrefs.data.disableOnlineShaders) {
-			blurFilter = new BlurFilter();
-			for (cam in FlxG.cameras.list) {
-				if (cam.filters == null)
-					cam.filters = [];
-				cam.filters.push(blurFilter);
-			}
-		} else {
-			blackSprite = new FlxSprite();
-			blackSprite.makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
-			blackSprite.alpha = 0.75;
-			add(blackSprite);
+		blurFilter = new BlurFilter();
+		for (cam in FlxG.cameras.list) {
+			if (cam.filters == null)
+				cam.filters = [];
+			cam.filters.push(blurFilter);
 		}
 
 		coolCam = new FlxCamera();
@@ -44,9 +36,6 @@ class TopPlayerSubstate extends MusicBeatSubstate {
 			leaderboardTimer.cancel();
 		leaderboardTimer = new FlxTimer().start(0.5, t -> { generateLeaderboard(); });
 		add(topShit);
-		
-		addTouchPad('LEFT_FULL', 'A_B');
-		controls.isInSubstate = true;
     }
 
     var top:Array<Dynamic> = [];
@@ -91,19 +80,15 @@ class TopPlayerSubstate extends MusicBeatSubstate {
 	}
 
 	override function destroy() {
-		controls.isInSubstate = false;
 		super.destroy();
 
 		if (leaderboardTimer != null)
 			leaderboardTimer.cancel();
 
-		if (!ClientPrefs.data.disableOnlineShaders) {
-			for (cam in FlxG.cameras.list) {
-				if (cam?.filters != null)
-					cam.filters.remove(blurFilter);
-			}
-		} else
-			blackSprite.destroy();
+		for (cam in FlxG.cameras.list) {
+			if (cam?.filters != null)
+				cam.filters.remove(blurFilter);
+		}
 		FlxG.cameras.remove(coolCam);
 	}
 
@@ -128,13 +113,13 @@ class TopPlayerSubstate extends MusicBeatSubstate {
 				leaderboardTimer.cancel();
 			leaderboardTimer = new FlxTimer().start(0.5, t -> { generateLeaderboard(); });
         }
-		else if (controls.UI_UP_P) {
+		else if (controls.UI_UP_P || FlxG.mouse.wheel > 0) {
 			curSelected--;
 			if (curSelected < 0)
 				curSelected = 14;
 			topShit.selectRow(curSelected);
 		}
-		else if (controls.UI_DOWN_P) {
+		else if (controls.UI_DOWN_P || FlxG.mouse.wheel < 0) {
 			curSelected++;
 			if (curSelected > 14)
 				curSelected = 0;
@@ -144,7 +129,7 @@ class TopPlayerSubstate extends MusicBeatSubstate {
 			LoadingScreen.toggle(false);
             close();
         }
-        else if (controls.ACCEPT) {
+        else if (controls.ACCEPT || FlxG.mouse.justPressed) {
 			if (top[curSelected] != null)
 				online.gui.sidebar.tabs.ProfileTab.view(top[curSelected].player);
         }
