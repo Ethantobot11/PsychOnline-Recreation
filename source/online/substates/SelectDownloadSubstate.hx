@@ -14,7 +14,6 @@ class SelectDownloadSubstate extends MusicBeatSubstate {
 	var downloads:DownloadPage;
 
 	var blurFilter:BlurFilter;
-	var blackSprite:FlxSprite;
 	var coolCam:FlxCamera;
 
 	function set_selected(v) {
@@ -41,18 +40,11 @@ class SelectDownloadSubstate extends MusicBeatSubstate {
 	override function create() {
 		super.create();
 
-		if (!ClientPrefs.data.disableOnlineShaders) {
-			blurFilter = new BlurFilter();
-			for (cam in FlxG.cameras.list) {
-				if (cam.filters == null)
-					cam.filters = [];
-				cam.filters.push(blurFilter);
-			}
-		} else {
-			blackSprite = new FlxSprite();
-			blackSprite.makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
-			blackSprite.alpha = 0.75;
-			add(blackSprite);
+		blurFilter = new BlurFilter();
+		for (cam in FlxG.cameras.list) {
+			if (cam.filters == null)
+				cam.filters = [];
+			cam.filters.push(blurFilter);
 		}
 
 		coolCam = new FlxCamera();
@@ -124,13 +116,10 @@ class SelectDownloadSubstate extends MusicBeatSubstate {
 	override function destroy() {
 		super.destroy();
 
-		if (!ClientPrefs.data.disableOnlineShaders) {
-			for (cam in FlxG.cameras.list) {
-				if (cam?.filters != null)
-					cam.filters.remove(blurFilter);
-			}
-		} else
-			blackSprite.destroy();
+		for (cam in FlxG.cameras.list) {
+			if (cam?.filters != null)
+				cam.filters.remove(blurFilter);
+		}
 		FlxG.cameras.remove(coolCam);
 	}
 
@@ -192,7 +181,6 @@ class DownloadBox extends FlxSpriteGroup {
 			name.color = FlxColor.LIME;
 		}
 		else if (url.startsWith('https://gamebanana.com/') 
-			|| url.startsWith('https://www.mediafire.com/file/')
 			|| (url.startsWith('https://github.com/') && FileUtils.isArchiveSupported(url))) {
 			name.color = FlxColor.YELLOW;
 		}
@@ -200,7 +188,8 @@ class DownloadBox extends FlxSpriteGroup {
 			|| url.startsWith('https://gamejolt.com/')
 			|| url.startsWith('https://mega.nz/')
 			|| url.startsWith('https://mega.io/')
-			|| url.startsWith('https://github.com/')) {
+			|| url.startsWith('https://github.com/')
+			|| url.startsWith('https://www.mediafire.com/file/')) {
 			name.color = FlxColor.RED;
 		}
 
