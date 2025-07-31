@@ -6,7 +6,7 @@ class GAssets {
 		if (img == null)
 			return null;
 
-		Paths.excludeAsset('assets/images/' + path + ".astc");
+		Paths.excludeAsset('assets/images/' + path + ".png");
 		return img.bitmap.clone();
 	}
 }
