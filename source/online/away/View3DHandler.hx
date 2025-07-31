@@ -37,6 +37,10 @@ class View3DHandler extends View3D {
 	public function new() {
 		super();
 
+		width = FlxG.width;
+		height = FlxG.height;
+		backgroundAlpha = 0;
+
 		if (stage != null)
 			init();
 		else
@@ -110,8 +114,8 @@ class View3DHandler extends View3D {
 		if (!freeCam)
 			return;
 
-		camera.rotationY += (Lib.current.mouseX - Lib.application.window.width / 2) / 30;
-		camera.rotationX += (Lib.current.mouseY - Lib.application.window.height / 2) / 30;
+		camera.rotationY += (Lib.current.mouseX - Lib.application.window.width / 2) / 10;
+		camera.rotationX += (Lib.current.mouseY - Lib.application.window.height / 2) / 10;
 		//Lib.application.window.mouseLock = true;
 
 		Lib.application.window.warpMouse(Std.int(Lib.application.window.width / 2), Std.int(Lib.application.window.height / 2));
@@ -149,7 +153,7 @@ class View3DHandler extends View3D {
 		render();
 	}
 
-	override function __enterFrame(_delta:Float) {
+	override function __enterFrame(_delta:Int) {
 		super.__enterFrame(_delta);
 
 		if (stageScene == null) {
@@ -157,7 +161,7 @@ class View3DHandler extends View3D {
 		}
 
 		if (!debugMode && !PlayState.instance?.paused) {
-			stageScene.update(_delta);
+			stageScene.update(_delta / 1000);
 		}
 
 		camera.rotationX = FlxMath.bound(camera.rotationX, -90, 90);
