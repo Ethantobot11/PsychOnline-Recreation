@@ -5,7 +5,7 @@ import states.MainMenuState;
 import externs.WinAPI;
 import haxe.Exception;
 import flixel.graphics.FlxGraphic;
-import haxe.io.Path;
+
 import flixel.FlxGame;
 import flixel.FlxState;
 import openfl.Assets;
@@ -20,19 +20,22 @@ import states.TitleState;
 import mobile.backend.MobileScaleMode;
 #end
 
-#if (linux || mac)
+#if linux
 import lime.graphics.Image;
 #end
 
-import backend.io.PsychFileSystem as FileSystem;
+import sys.FileSystem;
 
-#if (linux && !debug)
-@:cppInclude('./external/gamemode_client.h')
-@:cppFileCode('#define GAMEMODE_AUTO')
-#end
+//crash handler stuff
+import openfl.events.UncaughtErrorEvent;
+import haxe.CallStack;
+import haxe.io.Path;
+import sys.io.File;
+import sys.io.Process;
+
 class Main extends Sprite
 {
-	public static var game = {
+	var game = {
 		width: 1280, // WINDOW width
 		height: 720, // WINDOW height
 		initialState: TitleState, // initial game state
@@ -45,12 +48,22 @@ class Main extends Sprite
 	public static var fpsVar:FPS;
 
 	public static final PSYCH_ONLINE_VERSION:String = "0.12.2";
-	public static final CLIENT_PROTOCOL:Float = 8;
+	public static final CLIENT_PROTOCOL:Float = 9;
+	public static final NETWORK_PROTOCOL:Float = 8;
 	public static final GIT_COMMIT:String = online.backend.Macros.getGitCommitHash();
 	public static final LOW_STORAGE:Bool = online.backend.Macros.hasNoCapacity();
-	public static var UNOFFICIAL_BUILD:Bool = Main.LOW_STORAGE;
+	
+	/**
+	 * ! ! ! ! ! !
+	 * 
+	 * ANY TRY TO CIRCUMVENT THE PROPER WORKING OF THIS VARIABLE
+	 * WILL RESULT IN THE SOURCE/BUILD TO BE REPORTED
+	 * 
+	 * ! ! ! ! ! !
+	 */
+	public static var UNOFFICIAL_BUILD:Bool = false;
 
-	public static var wankyUpdate:String = 'version';
+	public static var wankyUpdate:String = null;
 	public static var latestRelease:Dynamic = {};
 	public static var updateVersion:String = '';
 
@@ -69,6 +82,7 @@ class Main extends Sprite
 			Sys.exit(1);
 		}
 		#end
+		}
 		
 		Lib.current.addChild(view3D = new online.away.View3DHandler());
 		Lib.current.addChild(new Main());
@@ -114,7 +128,6 @@ class Main extends Sprite
 
 	private function setupGame():Void
 	{
-		#if (openfl <= "9.2.0")
 		var stageWidth:Int = Lib.current.stage.stageWidth;
 		var stageHeight:Int = Lib.current.stage.stageHeight;
 
@@ -126,15 +139,6 @@ class Main extends Sprite
 			game.width = Math.ceil(stageWidth / game.zoom);
 			game.height = Math.ceil(stageHeight / game.zoom);
 		}
-		#else
-		if (game.zoom == -1.0)
-			game.zoom = 1.0;
-		#end
-
-		#if LUA_ALLOWED
-		Mods.pushGlobalMods();
-		#end
-		Mods.loadTopMod();
 
 		CoolUtil.setDarkMode(true);
 
@@ -163,6 +167,7 @@ class Main extends Sprite
 		ClientPrefs.loadDefaultKeys();
 		addChild(new FlxGame(game.width, game.height, game.initialState, #if (flixel < "5.0.0") game.zoom, #end game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
 
+		#if !mobile
 		fpsVar = new FPS(10, 3, 0xFFFFFF);
 		addChild(fpsVar);
 		Lib.current.stage.align = "tl";
@@ -170,8 +175,9 @@ class Main extends Sprite
 		if(fpsVar != null) {
 			fpsVar.visible = ClientPrefs.data.showFPS;
 		}
+		#end
 
-		#if (linux || mac)
+			#if (linux || mac)
 		final icon:Image = Image.fromFile("icon.png");
 		Lib.current.stage.window.setIcon(icon);
 		#end
@@ -200,13 +206,10 @@ class Main extends Sprite
 		FlxG.scaleMode = new MobileScaleMode();
 		#end
 
-		Application.current.window.vsync = ClientPrefs.data.vsync;
+        Application.current.window.vsync = ClientPrefs.data.vsync;
 
 		// shader coords fix
 		FlxG.signals.gameResized.add(function (w, h) {
-			if(fpsVar != null)
-				fpsVar.positionFPS(10, 3, Math.min(w / FlxG.width, h / FlxG.height));
-
 		     if (FlxG.cameras != null) {
 			   for (cam in FlxG.cameras.list) {
 				@:privateAccess
@@ -221,22 +224,7 @@ class Main extends Sprite
 
 		//ONLINE STUFF, BELOW CODE USE FOR BACKPORTING
 
-		var http = new haxe.Http("https://raw.githubusercontent.com/Snirozu/Funkin-Psych-Online/main/server_addresses.txt");
-		http.onData = function(data:String) {
-			for (address in data.split(',')) {
-				online.GameClient.serverAddresses.push(address.trim());
-			}
-		}
-		http.onError = function(error) {
-			trace('error: $error');
-		}
-		http.request();
-		#if LOCAL
-		online.GameClient.serverAddresses.insert(0, "ws://localhost:2567");
-		#else
-		online.GameClient.serverAddresses.push("ws://localhost:2567");
-		#end
-		online.network.FunkinNetwork.client = new online.http.HTTPHandler(online.GameClient.addressToUrl());
+		GameClient.updateAddresses();
 
 		online.mods.ModDownloader.checkDeleteDlDir();
 
@@ -260,10 +248,12 @@ class Main extends Sprite
 			#end
 			online.mods.ModDownloader.cancelAll();
 			online.mods.ModDownloader.checkDeleteDlDir();
+			try {
+				GameClient.leaveRoom();
+			} catch (exc) {}
 			online.network.Auth.saveClose();
 		});
 
-		#if !mobile
 		Lib.application.window.onDropFile.add(path -> {
 			if (FileSystem.isDirectory(path))
 				return;
@@ -279,7 +269,6 @@ class Main extends Sprite
 				});
 			}
 		});
-		#end
 
 		// clear messages before the current state gets destroyed and replaced with another
 		FlxG.signals.preStateSwitch.add(() -> {
@@ -307,6 +296,10 @@ class Main extends Sprite
 		online.backend.SyncScript.resyncScript(false, () -> {
 			online.backend.SyncScript.dispatch("init");
 		});
+
+		#if interpret
+		online.backend.InterpretLiveReload.init();
+		#end
 		#end
 	}
 
@@ -315,6 +308,82 @@ class Main extends Sprite
 		        sprite.__cacheBitmap = null;
 			sprite.__cacheBitmapData = null;
 		}
+	}
+
+	static function onCrash(exc:Dynamic):Void
+	{
+		trace(" . CRASHED . ");
+
+		if (exc == null)
+			exc = new Exception("Empty Uncaught Exception");
+
+		var alertMsg:String = "";
+		var daError:String = "";
+		var path:String;
+		var callStack:Array<StackItem> = CallStack.exceptionStack(true);
+		var dateNow:String = Date.now().toString();
+
+		dateNow = dateNow.replace(" ", "_");
+		dateNow = dateNow.replace(":", "'");
+
+		path = "./crash/" + "PsychEngine_" + dateNow + ".txt";
+
+		alertMsg += exc + "\n";
+		daError += CallStack.toString(callStack) + "\n";
+		if (exc is Exception)
+			daError += "\n" + cast(exc, Exception).stack.toString() + "\n";
+		alertMsg += daError;
+
+		Sys.println(alertMsg);
+
+		if (!FileSystem.exists("./crash/"))
+			FileSystem.createDirectory("./crash/");
+		File.saveContent(path, alertMsg + "\n\n === \n\nCommit: " + GIT_COMMIT + "\n");
+		Sys.println("Crash dump saved in " + Path.normalize(path));
+		
+		var daLine:Int = 0;
+		var daFile:String = '';
+
+		if (callStack.length > 0)
+			switch (callStack[0]) {
+				case FilePos(s, file, line, col):
+					daLine = line;
+					daFile = file;
+					if (s != null && daFile != null && daFile.startsWith('lumod/LuaScriptClass'))
+						switch (s) {
+							case Method(cname, meth): // haxe has meth confirm?
+								if (cname != null)
+									daFile = cname.replace('.', '/') + ".hx";
+							default:
+						}
+				default:
+			}
+
+		var cookUrl = 'https://github.com/Snirozu/Funkin-Psych-Online/blob/$GIT_COMMIT/source/$daFile#L$daLine';
+
+		#if (windows && cpp)
+		if (!Main.UNOFFICIAL_BUILD) {
+			alertMsg += "\nDo you wish to report this error on GitHub?";
+			alertMsg += "\nPress Yes to draft a new GitHub issue";
+			alertMsg += "\nPress No to jump into the origin error point (on GitHub)";
+			WinAPI.ask("Uncaught Exception!", alertMsg, () -> { // yes
+				daError += '\nVersion: ${Main.PSYCH_ONLINE_VERSION} ([$GIT_COMMIT]($cookUrl))';
+				FlxG.openURL('https://github.com/Snirozu/Funkin-Psych-Online/issues/new?title=${StringTools.urlEncode('Exception: ${exc}')}&body=${StringTools.urlEncode(daError)}');
+			}, () -> { // no
+				FlxG.openURL(cookUrl);
+			});
+		}
+		else {
+			Application.current.window.alert(alertMsg, "Uncaught Exception!");
+		}
+		#else
+		Application.current.window.alert(alertMsg, "Uncaught Exception!");
+		#end
+		try {
+			GameClient.leaveRoom();
+		} catch (exc) {}
+		online.network.Auth.saveClose();
+		Sys.exit(1);
 	}
 
 	public static function getTime():Float {
