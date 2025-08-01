@@ -21,8 +21,8 @@ import states.StoryMenuState;
 import states.MainMenuState;
 
 #if MODS_ALLOWED
-import backend.io.PsychFileSystem as FileSystem;
-import backend.io.PsychFile as File;
+import sys.FileSystem;
+import sys.io.File;
 #end
 
 typedef TitleData =
@@ -78,6 +78,15 @@ class TitleState extends MusicBeatState
 		Paths.clearStoredMemory();
 		Paths.clearUnusedMemory();
 
+		#if LUA_ALLOWED
+		Mods.pushGlobalMods();
+		#end
+		Mods.loadTopMod();
+
+		FlxG.fixedTimestep = false;
+		FlxG.game.focusLostFramerate = 60;
+		FlxG.keys.preventDefaultKeys = [TAB];
+
 		curWacky = FlxG.random.getObject(getIntroTextShit());
 
 		super.create();
@@ -86,6 +95,7 @@ class TitleState extends MusicBeatState
 		online.network.Auth.load();
 
 		ClientPrefs.loadPrefs();
+		#if ACHIEVEMENTS_ALLOWED Achievements.load(); #end
 
 		backend.NoteSkinData.reloadNoteSkins();
 
@@ -109,29 +119,42 @@ class TitleState extends MusicBeatState
 					return Std.parseInt(s);
 				});
 
-				trace('comparing ' + updatVer + ' > ' + curVer);
-				for (i => num in updatVer) {
-					if (num > curVer[i] ?? 0) {
-						switch (i) {
-							case 0:
-								Main.wankyUpdate = 'PSYCH ENGINE 1.0.0 WHAT';
-							case 1:
-								Main.wankyUpdate = 'major release';
-							default:
-								Main.wankyUpdate = 'minor patch';
+				if (curVersion.contains('-rc.')) {
+					var candiVer = curVersion.split('-rc.');
+					Main.wankyUpdate = 'Runnning on a\nRelease Candidate No. ' + candiVer[1] + '\nto version: ' + candiVer[0];
+					lime.app.Application.current.window.title = lime.app.Application.current.window.title + ' [DEV]';
+					inDev = true;
+				}
+				else {
+					trace('comparing ' + updatVer + ' > ' + curVer);
+					for (i => num in updatVer) {
+						if (num < curVer[i] ?? 0) {
+							inDev = true;
+							trace('running on indev build! [' + i + "]");
+							lime.app.Application.current.window.title = lime.app.Application.current.window.title + ' [DEV]';
+							break;
 						}
-						mustUpdate = true;
-						trace('update version is newer! [' + i + "]");
-						break;
-					}
-					if (num < curVer[i] ?? 0) {
-						inDev = true;
-						trace('running on indev build! [' + i + "]");
-						lime.app.Application.current.window.title = lime.app.Application.current.window.title + ' [DEV]';
-						break;
-					}
-					if (i == updatVer.length - 1) {
-						trace('running on latest version!');
+						if (num > curVer[i] ?? 0) {
+							var updateTitle = '';
+							switch (i) {
+								case 0:
+									// api breaking functionality or overhauls
+									updateTitle = 'HUGE update';
+								case 1:
+									// new features with non breaking changes 
+									updateTitle = 'major version';
+								default:
+									// bug fixes and patches
+									updateTitle = 'minor version';
+							}
+							Main.wankyUpdate = 'A new ${updateTitle} is available!\n(Click here to update)';
+							mustUpdate = true;
+							trace('update version is newer! [' + i + "]");
+							break;
+						}
+						if (i == updatVer.length - 1) {
+							trace('running on latest version!');
+						}
 					}
 				}
 			}
@@ -171,7 +194,6 @@ class TitleState extends MusicBeatState
 			}
 			persistentUpdate = true;
 			persistentDraw = true;
-			MobileData.init();
 		}
 
 		if (FlxG.save.data.weekCompleted != null)
@@ -192,7 +214,6 @@ class TitleState extends MusicBeatState
 		FlxG.switchState(() -> new ChartingState());
 		#else
 		if(FlxG.save.data.flashing == null && !FlashingState.leftState) {
-			controls.isInSubstate = false;
 			FlxTransitionableState.skipNextTransIn = true;
 			FlxTransitionableState.skipNextTransOut = true;
 			FlxG.switchState(() -> new FlashingState());
@@ -405,9 +426,9 @@ class TitleState extends MusicBeatState
 			Conductor.songPosition = FlxG.sound.music.time;
 		// FlxG.watch.addQuick('amp', FlxG.sound.music.amplitude);
 
-		var pressedEnter:Bool = FlxG.keys.justPressed.ENTER || controls.ACCEPT;
+		var pressedEnter:Bool = FlxG.keys.justPressed.ENTER || controls.ACCEPT || FlxG.mouse.justPressed;
 
-		#if FLX_TOUCH
+		#if mobile
 		for (touch in FlxG.touches.list)
 		{
 			if (touch.justPressed)
@@ -781,6 +802,8 @@ class TitleState extends MusicBeatState
 
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();
+
+		FreeplayState.destroyFreeplayVocals();
 
 		if (daSong == null && ClientPrefs.data.favsAsMenuTheme && ClientPrefs.data.favSongs != null && ClientPrefs.data.favSongs.length > 0) {
 			var songs:Array<TrackSong> = [];
