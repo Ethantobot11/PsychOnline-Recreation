@@ -5,6 +5,7 @@ import flixel.input.FlxPointer;
 import flixel.input.IFlxInput;
 import flixel.math.FlxPoint;
 import flixel.util.FlxDestroyUtil.IFlxDestroyable;
+import flixel.util.FlxDestroyUtil;
 #if mac
 import flixel.input.mouse.FlxMouseButton;
 #end
