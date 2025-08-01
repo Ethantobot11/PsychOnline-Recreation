@@ -47,7 +47,7 @@ import substates.GameplayChangersSubstate;
 import substates.ResetScoreSubState;
 
 #if MODS_ALLOWED
-import backend.io.PsychFileSystem as FileSystem;
+import sys.FileSystem;
 #end
 
 class FreeplayState extends MusicBeatState
@@ -126,7 +126,7 @@ class FreeplayState extends MusicBeatState
 	// var dShots:FlxTypedGroup<FlxEffectSprite> = new FlxTypedGroup<FlxEffectSprite>();
 	var diffSelect:Alphabet = new Alphabet(0, 0, "< ? >", true);
 	var modifiersSelect:Alphabet = new Alphabet(0, 0, !GameClient.isConnected() ? "GAMEPLAY MODIFIERS" : "MODIFIERS UNAVAILABLE HERE", true);
-	var replaysSelect:Alphabet = new Alphabet(0, 0, #if mobile "REPLAYS UNAVAILABLE" #else !GameClient.isConnected() ? "LOAD REPLAY" : "REPLAYS UNAVAILABLE" #end, true);
+	var replaysSelect:Alphabet = new Alphabet(0, 0, !GameClient.isConnected() ? "LOAD REPLAY" : "REPLAYS UNAVAILABLE", true);
 	var resetSelect:Alphabet = new Alphabet(0, 0, "RESET SCORE", true);
 
 	var topTitle:Alphabet = new Alphabet(0, 0, "LEADERBOARD", true);
@@ -180,7 +180,6 @@ class FreeplayState extends MusicBeatState
 
 	var curSkin:Array<String> = [null, null];
 
-	static var buttonS = "";
 	override function create()
 	{
 		instance = this;
@@ -360,8 +359,7 @@ class FreeplayState extends MusicBeatState
 		scoreBG.scrollFactor.set();
 		scoreBG.cameras = [hudCamera];
 
-		buttonS = (controls.mobileC) ? "S" : "F";
-		searchInput = new FlxText(scoreText.x, scoreText.y + 36, 0, "PRESS " + buttonS + " TO SEARCH", 24);
+		searchInput = new FlxText(scoreText.x, scoreText.y + 36, 0, "PRESS F TO SEARCH", 24);
 		searchInput.font = scoreText.font;
 		searchInput.scrollFactor.set();
 
@@ -603,9 +601,6 @@ class FreeplayState extends MusicBeatState
 		updateTexts();
 		searchString = searchString;
 
-		addTouchPad('LEFT_FULL', (GameClient.isConnected()) ? 'FREEPLAY_ONLINE' : 'FREEPLAY');
-		addTouchPadCamera();
-
 		super.create();
 
 		CustomFadeTransition.nextCamera = hudCamera;
@@ -691,10 +686,10 @@ class FreeplayState extends MusicBeatState
 		#end
 
 		for (i => directory in directories) {
-			//if (FileSystem.exists(directory)) {
+			if (FileSystem.exists(directory)) {
 				for (file in FileSystem.readDirectory(directory)) {
 					var path = haxe.io.Path.join([directory, file]);
-					if (/*!FileSystem.isDirectory(path) &&*/ file.endsWith('.json')) {
+					if (!sys.FileSystem.isDirectory(path) && file.endsWith('.json')) {
 						var charToCheck:String = file.substr(0, file.length - 5);
 						if (!charsWeeksLoaded.exists(charToCheck)) {
 							charsWeeksLoaded.set(charToCheck, directoryMods[i]);
@@ -707,7 +702,7 @@ class FreeplayState extends MusicBeatState
 						}
 					}
 				}
-			//}
+			}
 		}
 		Mods.loadTopMod();
 
@@ -748,9 +743,6 @@ class FreeplayState extends MusicBeatState
 		}
 
 		super.closeSubState();
-		removeTouchPad();
-		addTouchPad('LEFT_FULL', (GameClient.isConnected()) ? 'FREEPLAY_ONLINE' : 'FREEPLAY');
-		addTouchPadCamera();
 	}
 
 	function setDiffVisibility(value:Bool) {
@@ -797,8 +789,6 @@ class FreeplayState extends MusicBeatState
 	public static var vocals:FlxSound = null;
 	public static var opponentVocals:FlxSound = null;
 	var holdTime:Float = 0;
-	var doSongReset:Bool = false;
-	var resetTotalHeld:Float = 0;
 	override function update(elapsed:Float)
 	{
 		Conductor.songPosition = FlxG.sound.music.time;
@@ -851,14 +841,13 @@ class FreeplayState extends MusicBeatState
 			return;
 		}
 
-		if (!searchInputWait && (touchPad.buttonS.justPressed || FlxG.keys.justPressed.F)) {
-			FlxG.stage.window.textInputEnabled = true;
+		if (!searchInputWait && FlxG.keys.justPressed.F) {
 			searchInputWait = true;
 			searchString = searchString;
 		}
 
 		var shiftMult:Int = 1;
-		if(touchPad.buttonZ.pressed || FlxG.keys.pressed.SHIFT) shiftMult = 3;
+		if(FlxG.keys.pressed.SHIFT) shiftMult = 3;
 
 		if (!selected) {
 			if(songs.length > 0)
@@ -886,7 +875,7 @@ class FreeplayState extends MusicBeatState
 					holdTime = 0;
 				}
 
-				if ((touchPad.buttonF.justPressed || controls.FAV) && curSelected != -1) {
+				if (controls.FAV && curSelected != -1) {
 					var songId = songs[curSelected].songName + '-' + songs[curSelected].folder;
 					if (ClientPrefs.data.favSongs.contains(songId)) {
 						ClientPrefs.data.favSongs.remove(songId);
@@ -904,7 +893,7 @@ class FreeplayState extends MusicBeatState
 					search();
 				}
 
-				if (((touchPad.buttonR.justReleased && resetTotalHeld <= 3.5) || controls.RESET) && curSelected != -1 && !FlxG.keys.pressed.ALT) {
+				if (controls.RESET && curSelected != -1 && !FlxG.keys.pressed.ALT) {
 					var songId = songs[curSelected].songName + '-' + songs[curSelected].folder;
 					if (ClientPrefs.data.hiddenSongs.contains(songId)) {
 						ClientPrefs.data.hiddenSongs.remove(songId);
@@ -945,16 +934,7 @@ class FreeplayState extends MusicBeatState
 				}
 			}
 
-			if (touchPad.buttonR.pressed && resetTotalHeld <= 3.5)
-			{
-				resetTotalHeld += elapsed;
-				if (resetTotalHeld >= 3.5)
-					doSongReset = true;
-			} else if (touchPad.buttonR.released)
-				resetTotalHeld = 0;
-
-			if ((touchPad.buttonR.pressed && doSongReset) || (controls.RESET && FlxG.keys.pressed.ALT)) {
-				doSongReset = false;
+			if (controls.RESET && FlxG.keys.pressed.ALT) {
 				ClientPrefs.data.hiddenSongs = [];
 				ClientPrefs.saveSettings();
 				search();
@@ -972,13 +952,12 @@ class FreeplayState extends MusicBeatState
 					updateGroupTitle();
 				}
 
-				if (touchPad.buttonG.justPressed || FlxG.keys.justPressed.CONTROL) {
+				if (FlxG.keys.justPressed.CONTROL) {
 					persistentUpdate = false;
 					var daCopy = searchGroupVList.copy();
 					for (i => item in daCopy)
 						daCopy[i] = formatGroupItem(item);
-
-					touchPad.visible = false;
+					
 					var selState = new online.substates.SoFunkinSubstate(daCopy, searchGroupValue, i -> {
 						searchGroupValue = i;
 						search();
@@ -1041,7 +1020,7 @@ class FreeplayState extends MusicBeatState
 				}
 			}
 
-			if(touchPad.buttonX.justPressed || FlxG.keys.justPressed.SPACE)
+			if(FlxG.keys.justPressed.SPACE)
 			{
 				if (curSelected == -1) {
 					var newSel = FlxG.random.int(0, songs.length - 1);
@@ -1074,7 +1053,7 @@ class FreeplayState extends MusicBeatState
 				leaderboardTimer = 0;
 			}
 
-			if (chatBox == null && touchPad.buttonY.justPressed || FlxG.keys.justPressed.TAB) {
+			if (chatBox == null && FlxG.keys.justPressed.TAB) {
 				persistentUpdate = false;
 				FlxG.switchState(() -> new online.states.SkinsState());
 			}
@@ -1095,26 +1074,10 @@ class FreeplayState extends MusicBeatState
 							var poop:String = Highscore.formatSong(songLowercase, curDifficulty);
 
 							persistentUpdate = false;
-							// weird ass
-							GameClient.room.onMessage("checkChart", function(message) {
-								Waiter.put(() -> {
-									try {
-										var hash = Md5.encode(Song.loadRawSong(GameClient.room.state.song, GameClient.room.state.folder));
-										trace("verifying song: " + GameClient.room.state.song + " | " + GameClient.room.state.folder + " : " + hash);
-										GameClient.send("verifyChart", hash);
-										destroyFreeplayVocals();
-										FlxG.switchState(() -> new RoomState());
-										FlxG.autoPause = prevPauseGame;
-									}
-									catch (exc:Dynamic) {
-										Sys.println(exc);
-									}
-								});
-							});
 							updateMod();
 							trace('Song mod directory: "${Mods.currentModDirectory}"');
 							try {
-								GameClient.send("setFSD", [
+								GameClient.send("setSong", [
 									songLowercase,
 									poop,
 									curDifficulty,
@@ -1149,7 +1112,6 @@ class FreeplayState extends MusicBeatState
 							openSubState(new GameplayChangersSubstate());
 						}
 					case 2:
-						#if !mobile
 						if (!GameClient.isConnected()) {
 							if (!FileSystem.exists("replays/"))
 								FileSystem.createDirectory("replays/");
@@ -1160,7 +1122,6 @@ class FreeplayState extends MusicBeatState
 							});
 							fileDialog.open('funkinreplay', online.util.FileUtils.joinNativePath([Sys.getCwd(), "replays", "_"]), "Load Replay File");
 						}
-						#end
 					case 3:
 						persistentUpdate = false;
 						openSubState(new ResetScoreSubState(getSongName(), curDifficulty, songs[curSelected].songCharacter));
@@ -1173,7 +1134,7 @@ class FreeplayState extends MusicBeatState
 				}
 			}
 
-			if (controls.UI_UP_P) {
+			if (controls.UI_UP_P || FlxG.mouse.wheel > 0) {
 				if (selectedItem == 4 && selectedScore != 0) {
 					selectedScore--;
 				}
@@ -1191,7 +1152,7 @@ class FreeplayState extends MusicBeatState
 
 				FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
 			}
-			else if (controls.UI_DOWN_P) {
+			else if (controls.UI_DOWN_P || FlxG.mouse.wheel < 0) {
 				if (selectedItem == 4 && selectedScore != 14) {
 					selectedScore++;
 				}
@@ -1407,30 +1368,23 @@ class FreeplayState extends MusicBeatState
 
 		itemsCamera.targetOffset.set(0, 0);
 
-		final accept:String = (controls.mobileC) ? 'A' : 'ACCEPT';
-		final back:String = (controls.mobileC) ? 'B' : 'BACK';
-		final space:String = (controls.mobileC) ? 'X' : 'SPACE';
-		final tab:String = (controls.mobileC) ? 'Y' : 'TAB';
-		final reset:String = (controls.mobileC) ? 'R' : 'RESET';
-		final keys:String = (controls.mobileC) ? 'Buttons' : 'Keys';
-
 		if (curSelected == -1) {
-			infoText.text = accept + " to select a random song / " + space + " to select without loading / CTRL to select song group";
+			infoText.text = "ACCEPT to select a random song / SPACE to select without loading / CTRL to select song group";
 			if (chatBox == null)
-				infoText.text += ' / $tab to select your character!';
+				infoText.text += ' / TAB to select your character!';
 			return;
 		}
 
 		switch (selectedItem) {
 			case 0:
 				if (selected) {
-					infoText.text = accept + " to enter the Song / Use your Arrow " + keys + " to change the Difficulty";
+					infoText.text = "ACCEPT to enter the Song / Use your Arrow Keys to change the Difficulty";
 					itemsCamera.targetOffset.y += 200;
 				}
 				else {
-					infoText.text = accept + " to select the Song / " + space + " to listen to the Song / " + reset + " to " + (searchGroup == DEFAULT && searchGroupValue == 2 ? 'show' : 'hide') + " the Song";
+					infoText.text = "ACCEPT to select the Song / SPACE to listen to the Song / RESET to " + (searchGroup == DEFAULT && searchGroupValue == 2 ? 'show' : 'hide') + " the Song";
 					if (chatBox == null)
-						infoText.text += ' / $tab to select your character!';
+						infoText.text += ' / TAB to select your character!';
 				}
 
 				if (centerPoint == null)
@@ -1445,7 +1399,7 @@ class FreeplayState extends MusicBeatState
 				topTitle.alpha = 0.6;
 				topLoading.alpha = 0.6;
 			case 1:
-				infoText.text = accept + " to open Gameplay Modifers Menu";
+				infoText.text = "ACCEPT to open Gameplay Modifers Menu";
 
 				itemsCamera.follow(modifiersSelect, null, 0.15);
 				itemsCamera.targetOffset.y += 200;
@@ -1458,7 +1412,7 @@ class FreeplayState extends MusicBeatState
 				topTitle.alpha = 0.6;
 				topLoading.alpha = 0.6;
 			case 2:
-				infoText.text = accept + " to load a Replay data file";
+				infoText.text = "ACCEPT to load a Replay data file";
 				
 				itemsCamera.follow(replaysSelect, null, 0.15);
 				itemsCamera.targetOffset.y += 200;
@@ -1471,7 +1425,7 @@ class FreeplayState extends MusicBeatState
 				topTitle.alpha = 0.6;
 				topLoading.alpha = 0.6;
 			case 3:
-				infoText.text = accept + " to reset Score and Accuracy of this Song";
+				infoText.text = "ACCEPT to reset Score and Accuracy of this Song";
 
 				itemsCamera.follow(resetSelect, null, 0.15);
 				itemsCamera.targetOffset.y += 200;
@@ -1484,7 +1438,7 @@ class FreeplayState extends MusicBeatState
 				topTitle.alpha = 0.6;
 				topLoading.alpha = 0.6;
 			case 4:
-				infoText.text = "LEFT or RIGHT to Flip Pages / " + accept + " to view Player's replay of this song";
+				infoText.text = "LEFT or RIGHT to Flip Pages / ACCEPT to view Player's replay of this song";
 
 				itemsCamera.follow(topShit.background, null, 0.15);
 				itemsCamera.targetOffset.y -= 100 + topTitle.height;
@@ -1502,14 +1456,12 @@ class FreeplayState extends MusicBeatState
 		}
 
 		if (selected)
-			infoText.text += " / " + back + " to return to Songs";
+			infoText.text += " / BACK to return to Songs";
 
 		if (GameClient.isConnected()) {
-			#if !mobile replaysSelect.alpha -= 0.4; #end
-			modifiersSelect.alpha -= 0.4;
-		} #if mobile else
 			replaysSelect.alpha -= 0.4;
-		#end
+			modifiersSelect.alpha -= 0.4;
+		}
 	}
 
 	function listenToSong() {
@@ -1988,7 +1940,7 @@ class FreeplayState extends MusicBeatState
 		}
 
 		FreeplayState.instance.searchInput.alpha = 0.6;
-		FreeplayState.instance.searchInput.text = 'PRESS $buttonS TO SEARCH';
+		FreeplayState.instance.searchInput.text = 'PRESS F TO SEARCH';
 		return searchString = v;
 	}
 
@@ -2164,7 +2116,7 @@ class FreeplayState extends MusicBeatState
 
 	function tempDisableInput() {
 		new FlxTimer().start(0.05, (t) -> {
-			FlxG.stage.window.textInputEnabled = searchInputWait = false;
+			searchInputWait = false;
 			searchString = searchString;
 		});
 	}
