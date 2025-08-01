@@ -20,9 +20,13 @@ class BaseOptionsMenu extends MusicBeatSubstate
 	public var title:String;
 	public var rpcTitle:String;
 
+	public var bg:FlxSprite;
+
 	public function new()
 	{
 		super();
+
+		FlxG.mouse.visible = false;
 
 		if(title == null) title = 'Options';
 		if(rpcTitle == null) rpcTitle = 'Options Menu';
@@ -31,7 +35,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		DiscordClient.changePresence(rpcTitle, null);
 		#end
 		
-		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
+		bg = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
 		bg.color = 0xFFea71fd;
 		bg.screenCenter();
 		bg.antialiasing = ClientPrefs.data.antialiasing;
@@ -93,9 +97,6 @@ class BaseOptionsMenu extends MusicBeatSubstate
 
 		changeSelection();
 		reloadCheckboxes();
-
-		addTouchPad('LEFT_FULL', 'A_B_C');
-		controls.isInSubstate = true;
 	}
 
 	public function addOption(option:Option) {
@@ -117,8 +118,11 @@ class BaseOptionsMenu extends MusicBeatSubstate
 			changeSelection(1);
 		}
 
+		if (FlxG.mouse.wheel != 0) {
+			changeSelection(-FlxG.mouse.wheel);
+		}
+
 		if (controls.BACK) {
-			controls.isInSubstate = false;
 			close();
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 		}
@@ -133,7 +137,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 
 			if(usesCheckbox)
 			{
-				if(controls.ACCEPT)
+				if(controls.ACCEPT /* || FlxG.mouse.justPressed*/)
 				{
 					FlxG.sound.play(Paths.sound('scrollMenu'));
 					curOption.setValue((curOption.getValue() == true) ? false : true);
@@ -212,7 +216,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 				}
 			}
 
-			if(touchPad.buttonC.justPressed || controls.RESET)
+			if(controls.RESET)
 			{
 				var leOption:Option = optionsArray[curSelected];
 				leOption.setValue(leOption.defaultValue);
