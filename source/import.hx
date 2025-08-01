@@ -42,11 +42,11 @@ import backend.Conductor;
 import backend.BaseStage;
 import backend.Difficulty;
 import backend.Mods;
-import mobile.backend.StorageUtil
+import mobile.backend.StorageUtil;
 
 //Android
 #if android
-import android.content.Context as AndroidContext;
+import android.content.Context;
 import android.widget.Toast as AndroidToast;
 import android.os.Environment as AndroidEnvironment;
 import android.Permissions as AndroidPermissions;
