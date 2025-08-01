@@ -1,8 +1,8 @@
 package states;
 
 #if MODS_ALLOWED
-import backend.io.PsychFileSystem as FileSystem;
-import backend.io.PsychFile as File;
+import sys.FileSystem;
+import sys.io.File;
 #end
 
 import objects.AttachedSprite;
@@ -44,17 +44,16 @@ class CreditsState extends MusicBeatState
 		#end
 
 		var defaultList:Array<Array<String>> = [ //Name - Icon name - Description - Link - BG Color
-			['Mobile Porting Team'],
-			['HomuHomu833',			'homura',             'Porter of Psych Engine Online and Author of linc_luajit-rewriten',                       'https://youtube.com/@HomuHomu833',		'FFE7C0'],
-			[''],
 			['Psych Online'],
 			['Snirozu', 'snirozu', 'Developer', 'https://sniro.boo', 'FFCC33'],
 			[''],
 			['Contributors'],
-			['Magniill', 'notmagniill', 'Remade the Online button sprite!', 'https://twitter.com/magniill', '910000'],
-			['Til', 'til', 'Awesome Contributor!', 'https://github.com/TechnikTil', 'FFFF00'],
-			['Vortex', 'vor', 'Neat Contributor!', 'https://github.com/Vortex2Oblivion', '00FFFF'],
-			['xenkap', '', 'Swag Contributor!', 'https://github.com/xenkap', '9370DB'],
+			['Til', 'til', 'Awesome Code Contributor!', 'https://techniktil.tilnotdrip.org', 'FFFF00'],
+			['Poyo', 'pojo', '2v2 Update Playtester and Network Helper', 'https://twitter.com/_Poyo_09', 'B462DD'],
+			['Mad!', 'mad', 'Results Screen Re-Assets', 'https://twitter.com/MadWolfAround', 'BF53D1'],
+			['Magniill', 'notmagniill', 'Redrew the Online Menu Button', 'https://twitter.com/magniill', '910000'],
+			['Vortex', 'vor', 'Multiple Atlas Support', 'https://github.com/Vortex2Oblivion', '00FFFF'],
+			['xenkap', '', 'Code Contributor', 'https://github.com/xenkap', '9370DB'],
 			[''],
 			['Psych Engine Team'],
 			['Shadow Mario',		'shadowmario',		'Main Programmer of Psych Engine',								'https://twitter.com/Shadow_Mario_',	'444444'],
@@ -132,7 +131,6 @@ class CreditsState extends MusicBeatState
 		bg.color = CoolUtil.colorFromString(creditsStuff[curSelected][4]);
 		intendedColor = bg.color;
 		changeSelection();
-		addTouchPad('UP_DOWN', 'A_B');
 		super.create();
 	}
 
@@ -164,6 +162,10 @@ class CreditsState extends MusicBeatState
 				{
 					changeSelection(shiftMult);
 					holdTime = 0;
+				}
+
+				if (FlxG.mouse.wheel != 0) {
+					changeSelection(-shiftMult * FlxG.mouse.wheel);
 				}
 
 				if(controls.UI_DOWN || controls.UI_UP)
