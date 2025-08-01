@@ -11,24 +11,19 @@ class OutdatedState extends MusicBeatState
 
 		leftState = false;
 
-		final accept:String = (controls.mobileC) ? 'A' : 'ACCEPT';
-		final back:String = (controls.mobileC) ? 'B' : 'BACK';
-
 		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		add(bg);
 
 		warnText = new FlxText(0, 0, FlxG.width,
-			"Sorry, but you have to update this port
+			"Sorry, but you have to update this mod
 			your current version is '" + Main.PSYCH_ONLINE_VERSION + "' while
 			the latest is '" + Main.updateVersion + "'\n
-			" + accept + " - Jump into the download page!
-			" + back + " - Continue without updating.",
+			ACCEPT - Jump into the download page!
+			BACK - Continue without updating.",
 			32);
 		warnText.setFormat("VCR OSD Mono", 32, FlxColor.WHITE, CENTER);
 		warnText.screenCenter(Y);
 		add(warnText);
-
-		addTouchPad('NONE', 'A_B');
 	}
 
 	override function update(elapsed:Float)
