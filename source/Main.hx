@@ -99,11 +99,10 @@ class Main extends Sprite
 		super();
         #if android
 		StorageUtil.requestPermissions();
-		#end
 		Sys.setCwd(StorageUtil.getStorageDirectory());
 		#end
 		backend.CrashHandler.init();
-		#end
+	
 		#if (cpp && windows)
 		backend.Native.fixScaling();
 		#end
