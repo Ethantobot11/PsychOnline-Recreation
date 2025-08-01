@@ -103,7 +103,7 @@ class Main extends Sprite
 		Sys.setCwd(StorageUtil.getStorageDirectory());
 		#end
 		backend.CrashHandler.init();
-
+		#end
 		#if (cpp && windows)
 		backend.Native.fixScaling();
 		#end
