@@ -155,7 +155,7 @@ class DialogueBox extends FlxSpriteGroup
 			dialogueStarted = true;
 		}
 
-		if(TouchUtil.justPressed || Controls.instance.ACCEPT)
+		if(Controls.instance.ACCEPT)
 		{
 			if (dialogueEnded)
 			{
