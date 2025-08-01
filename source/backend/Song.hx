@@ -4,8 +4,8 @@ import tjson.TJSON as Json;
 import lime.utils.Assets;
 
 #if sys
-import backend.io.PsychFile as File;
-import backend.io.PsychFileSystem as FileSystem;
+import sys.io.File;
+import sys.FileSystem;
 #end
 
 import backend.Section;
