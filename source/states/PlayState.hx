@@ -4143,8 +4143,8 @@ class PlayState extends MusicBeatState
 				Paths.image(uiPrefix + 'num' + i + uiSuffix);
 	}
 
-	inline function recycleComboSprite():FlxSprite {
-		var v:FlxSprite = cast comboGroup.recycle(FlxTweenedSprite);
+	inline function recycleComboSprite():FlxTweenedSprite {
+		var v:FlxTweenedSprite = cast comboGroup.recycle(FlxTweenedSprite);
 		v.reset(0, 0);
 		v.velocity.set(0, 0);
 		v.offset.set(0, 0);
