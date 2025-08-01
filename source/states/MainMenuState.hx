@@ -129,19 +129,19 @@ class MainMenuState extends MusicBeatState
 		versionShit.scrollFactor.set();
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
-		var versionShit:FlxText = new FlxText(12, FlxG.height - 44, 0, "Psych Engine v" + psychEngineVersion + "*", 12);
+		var versionShit:FlxText = new FlxText(12, FlxG.height - 44, 0, !Main.UNOFFICIAL_BUILD ? "(OFFICIAL BUILD)" : "(NOT AN OFFICIAL BUILD)", 12);
+		if (Main.UNOFFICIAL_BUILD)
+			versionShit.color = FlxColor.RED;
 		versionShit.scrollFactor.set();
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
-		var versionShit:FlxText = new FlxText(12, FlxG.height - 24, 0, "Friday Night Funkin' v" + Application.current.meta.get('version'), 12);
+		var versionShit:FlxText = new FlxText(12, FlxG.height - 24, 0, "Psych Engine v" + psychEngineVersion + "*", 12);
 		versionShit.scrollFactor.set();
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 
-		if (TitleState.mustUpdate) {
-			FlxG.mouse.visible = true;
-
-			var updatE:FlxText = new FlxText(12, FlxG.height - 64, 0, 'A new ${Main.wankyUpdate} is available!\n(Click here to update)', 12);
+		if (Main.wankyUpdate != null) {
+			var updatE:FlxText = new FlxText(12, FlxG.height - 64, 0, Main.wankyUpdate, 12);
 			updatE.scrollFactor.set();
 			updatE.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			updatE.setPosition(FlxG.width - updatE.width - 40, 40);
@@ -155,40 +155,32 @@ class MainMenuState extends MusicBeatState
 			add(updatE);
 		}
 
+		FlxG.mouse.visible = true;
+
 		// NG.core.calls.event.logEvent('swag').send();
 
 		changeItem();
 
-		#if ACHIEVEMENTS_ALLOWED
-		Achievements.loadAchievements();
 		var leDate = Date.now();
+
+		#if ACHIEVEMENTS_ALLOWED
+		// Unlocks "Freaky on a Friday Night" achievement if it's a Friday and between 18:00 PM and 23:59 PM
 		if (leDate.getDay() == 5 && leDate.getHours() >= 18) {
 			online.backend.DateEvent.isFridayNight = true;
-			var achieveID:Int = Achievements.getAchievementIndex('friday_night_play');
-			if(!Achievements.isAchievementUnlocked(Achievements.achievementsStuff[achieveID][2])) { //It's a friday night. WEEEEEEEEEEEEEEEEEE
-				Achievements.achievementsMap.set(Achievements.achievementsStuff[achieveID][2], true);
-				giveAchievement();
-				ClientPrefs.saveSettings();
-			}
+			Achievements.unlock('friday_night_play');
 		}
+
+		#if MODS_ALLOWED
+		Achievements.reloadList();
+		#end
+		#end
+
 		if (leDate.getMonth() == 9) {
 			online.backend.DateEvent.isHalloween = true;
 		}
-		#end
-
-		addTouchPad('UP_DOWN', 'A_B_E');
 
 		super.create();
 	}
-
-	#if ACHIEVEMENTS_ALLOWED
-	// Unlocks "Freaky on a Friday Night" achievement
-	function giveAchievement() {
-		add(new AchievementPopup('friday_night_play', camAchievement));
-		FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
-		trace('Giving achievement "friday_night_play"');
-	}
-	#end
 
 	var selectedSomethin:Bool = false;
 
@@ -219,6 +211,19 @@ class MainMenuState extends MusicBeatState
 				changeItem(1);
 			}
 
+			if (FlxG.mouse.deltaScreenY != 0) {
+				menuItems.forEach(function(spr:FlxSprite) {
+					if (FlxG.mouse.overlaps(spr, spr.camera) && spr.ID - curSelected != 0) {
+						changeItem(spr.ID - curSelected);
+						FlxG.sound.play(Paths.sound('scrollMenu'));
+					}
+				});
+			}
+
+			if (FlxG.mouse.wheel != 0) {
+				changeItem(-FlxG.mouse.wheel);
+			}
+
 			if (controls.BACK)
 			{
 				selectedSomethin = true;
@@ -226,7 +231,7 @@ class MainMenuState extends MusicBeatState
 				FlxG.switchState(() -> new TitleState());
 			}
 
-			if (controls.ACCEPT)
+			if (controls.ACCEPT || FlxG.mouse.justPressed)
 			{
 				if (optionShit[curSelected] == 'donate')
 				{
@@ -288,14 +293,19 @@ class MainMenuState extends MusicBeatState
 					});
 				}
 			}
-			else if (touchPad.buttonE.justPressed || controls.justPressed('debug_1'))
+			#if desktop
+			else if (controls.justPressed('debug_1'))
 			{
 				selectedSomethin = true;
 				FlxG.switchState(() -> new MasterEditorMenu());
 			}
+			#end
 
 			if (FlxG.mouse.justPressed && updatEBg != null && FlxG.mouse.overlaps(updatEBg)) {
-				online.substates.RequestSubstate.requestURL(Main.latestRelease.html_url, true);
+				if (TitleState.mustUpdate)
+					online.substates.RequestSubstate.requestURL(Main.latestRelease.html_url, true);
+				else
+					online.substates.RequestSubstate.requestURL('https://github.com/Snirozu/Funkin-Psych-Online/releases', true);
 			}
 		}
 
