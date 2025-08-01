@@ -39,7 +39,8 @@ class FPS extends TextField
 	{
 		super();
 
-		positionFPS(x, y);
+		this.x = x;
+		this.y = y;
 
 		currentFPS = 0;
 		selectable = false;
@@ -78,9 +79,9 @@ class FPS extends TextField
 			times.shift();
 		}
 
-		var currentCount:Int = times.length;
+		var currentCount = times.length;
 		currentFPS = Math.round((currentCount + cacheCount) / 2);
-		var optionFramerate:Int = ClientPrefs.data.unlockFramerate ? 1000 : ClientPrefs.data.framerate;
+		var optionFramerate = ClientPrefs.data.unlockFramerate ? 1000 : ClientPrefs.data.framerate;
 		if (currentFPS > optionFramerate) currentFPS = optionFramerate;
 
 		if (currentCount != cacheCount /*&& visible*/)
@@ -121,11 +122,5 @@ class FPS extends TextField
 		}
 
 		cacheCount = currentCount;
-	}
-
-	public inline function positionFPS(X:Float, Y:Float, ?scale:Float = 1){
-		scaleX = scaleY = #if android (scale > 1 ? scale : 1) #else (scale < 1 ? scale : 1) #end;
-		x = FlxG.game.x + X;
-		y = FlxG.game.y + Y;
 	}
 }
