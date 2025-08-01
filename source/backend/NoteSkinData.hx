@@ -3,8 +3,8 @@ package backend;
 import openfl.utils.Assets;
 
 #if sys
-import backend.io.PsychFile as File;
-import backend.io.PsychFileSystem as FileSystem;
+import sys.io.File;
+import sys.FileSystem;
 #end
 
 class NoteSkinData {
