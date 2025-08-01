@@ -2,8 +2,8 @@ package objects;
 
 import online.GameClient;
 import shaders.RGBPalette;
+import flixel.system.FlxAssets.FlxShader;
 import flixel.graphics.frames.FlxFrame;
-import shaders.flixel.system.FlxShader;
 
 typedef NoteSplashConfig = {
 	anim:String,
@@ -243,7 +243,6 @@ class PixelSplashShader extends FlxShader
 		vec4 flixel_texture2DCustom(sampler2D bitmap, vec2 coord) {
 			vec2 blocks = openfl_TextureSize / uBlocksize;
 			vec4 color = flixel_texture2D(bitmap, floor(coord * blocks) / blocks);
-
 			if (!hasTransform) {
 				return color;
 			}
