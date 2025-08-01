@@ -102,7 +102,6 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 
 	public function new()
 	{
-		controls.isInSubstate = true;
 		super();
 		
 		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
@@ -160,12 +159,7 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 
 		if (GameClient.isConnected()) {
 			GameClient.room.state.gameplaySettings.onChange(receiveChange);
-			if (MusicBeatState.getState().touchPad != null)
-				MusicBeatState.getState().touchPad.visible = false;
 		}
-
-		addTouchPad('LEFT_FULL', 'A_B_C');
-		addTouchPadCamera();
 	}
 
 	function receiveChange(_:Dynamic, __:Dynamic) {
@@ -201,9 +195,6 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		}
 
 		if (controls.BACK) {
-			controls.isInSubstate = false;
-			if (GameClient.isConnected() && MusicBeatState.getState().touchPad != null)
-				MusicBeatState.getState().touchPad.visible = true;
 			close();
 			ClientPrefs.saveSettings();
 			FlxG.sound.play(Paths.sound('cancelMenu'));
@@ -317,7 +308,7 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 				}
 			}
 
-			if(touchPad.buttonC.justPressed || controls.RESET)
+			if(controls.RESET)
 			{
 				for (i in 0...optionsArray.length)
 				{
@@ -497,15 +488,20 @@ class GameplayOption
 
 	public function getValue():Dynamic
 	{
-		if (GameClient.isConnected() && !GameClient.room.state.permitModifiers) {
+		if (GameClient.isConnected()) {
 			return GameClient.getGameplaySetting(variable);
 		}
 		return ClientPrefs.data.gameplaySettings.get(variable);
 	}
 	public function setValue(value:Dynamic)
 	{
-		if (GameClient.isConnected() && !GameClient.room.state.permitModifiers) {
-			return GameClient.setGameplaySetting(variable, value);
+		if (GameClient.isConnected()) {
+			if (GameClient.hasPerms()) {
+				GameClient.send("setGameplaySetting", [variable, value]);
+			}
+
+			if (variable == 'songspeed')
+				return;
 		}
 		ClientPrefs.data.gameplaySettings.set(variable, value);
 	}
