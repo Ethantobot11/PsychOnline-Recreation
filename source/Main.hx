@@ -73,15 +73,19 @@ class Main extends Sprite
 
 	public static function main():Void
 	{
-		#if !mobile // would crash the game
+        #if !mobile
 		if (Path.normalize(Sys.getCwd()) != Path.normalize(lime.system.System.applicationDirectory)) {
-			Lib.application.window.alert("Your path is either not run from the game directory,\nor contains illegal UTF-8 characters!\n\nRun from: "
-				+ Sys.getCwd()
-				+ "\nExpected path: " + lime.system.System.applicationDirectory, 
-			"Invalid Runtime Path!");
-			Sys.exit(1);
-		}
-		#end
+			Sys.setCwd(lime.system.System.applicationDirectory);
+
+			if (Path.normalize(Sys.getCwd()) != Path.normalize(lime.system.System.applicationDirectory)) {
+				Lib.application.window.alert("Your path is either not run from the game directory,\nor contains illegal UTF-8 characters!\n\nRun from: "
+					+ Sys.getCwd()
+					+ "\nExpected path: "
+					+ lime.system.System.applicationDirectory,
+					"Invalid Runtime Path!");
+				Sys.exit(1);
+			}
+		   #end
 		
 		Lib.current.addChild(view3D = new online.away.View3DHandler());
 		Lib.current.addChild(new Main());
@@ -93,8 +97,7 @@ class Main extends Sprite
 	public function new()
 	{
 		super();
-		#if mobile
-		#if android
+        #if android
 		StorageUtil.requestPermissions();
 		#end
 		Sys.setCwd(StorageUtil.getStorageDirectory());
@@ -166,7 +169,7 @@ class Main extends Sprite
 		ClientPrefs.loadDefaultKeys();
 		addChild(new FlxGame(game.width, game.height, game.initialState, #if (flixel < "5.0.0") game.zoom, #end game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
 
-		#if !mobile
+	#if !mobile
 		fpsVar = new FPS(10, 3, 0xFFFFFF);
 		addChild(fpsVar);
 		Lib.current.stage.align = "tl";
@@ -195,17 +198,22 @@ class Main extends Sprite
 		#end
 
 		#if android FlxG.android.preventDefaultKeys = [BACK]; #end
+		
+		//haxe errors caught by openfl
+		Lib.current.loaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, (e) -> {
+			onCrash(e.error);
+		});
+		//internal c++ exceptions
+		untyped __global__.__hxcpp_set_critical_error_handler(onCrash);
 
 		#if DISCORD_ALLOWED
-		DiscordClient.start();
+		DiscordClient.initialize();
 		#end
 
 		#if mobile
 		lime.system.System.allowScreenTimeout = ClientPrefs.data.screensaver; 		
 		FlxG.scaleMode = new MobileScaleMode();
 		#end
-
-        Application.current.window.vsync = ClientPrefs.data.vsync;
 
 		// shader coords fix
 		FlxG.signals.gameResized.add(function (w, h) {
