@@ -1,8 +1,8 @@
 package backend;
 
 #if sys
-import backend.io.PsychFileSystem as FileSystem;
-import backend.io.PsychFile as File;
+import sys.FileSystem;
+import sys.io.File;
 #else
 import lime.utils.Assets;
 #end
@@ -61,7 +61,7 @@ class Mods
 			for (folder in FileSystem.readDirectory(modsFolder))
 			{
 				var path = haxe.io.Path.join([modsFolder, folder]);
-				if (backend.io.PsychFileSystem.isDirectory(path) && !ignoreModFolders.contains(folder.toLowerCase()) && !list.contains(folder))
+				if (sys.FileSystem.isDirectory(path) && !ignoreModFolders.contains(folder.toLowerCase()) && !list.contains(folder))
 					list.push(folder);
 			}
 		}
@@ -99,7 +99,10 @@ class Mods
 	inline public static function directoriesWithFile(path:String, fileToFind:String, mods:Bool = true)
 	{
 		var foldersToCheck:Array<String> = [];
-		foldersToCheck.push(path + fileToFind);
+		#if sys
+		if(FileSystem.exists(path + fileToFind))
+		#end
+			foldersToCheck.push(path + fileToFind);
 
 		#if MODS_ALLOWED
 		if(mods)
@@ -155,7 +158,7 @@ class Mods
 
 		#if MODS_ALLOWED
 		try {
-			for (mod in CoolUtil.coolTextFile(#if mobile Sys.getCwd() + #end 'modsList.txt'))
+			for (mod in CoolUtil.coolTextFile('modsList.txt'))
 			{
 				//trace('Mod: $mod');
 				if(mod.trim().length < 1) continue;
@@ -181,7 +184,7 @@ class Mods
 		var list:Array<Array<Dynamic>> = [];
 		var added:Array<String> = [];
 		try {
-			for (mod in CoolUtil.coolTextFile(#if mobile Sys.getCwd() + #end 'modsList.txt'))
+			for (mod in CoolUtil.coolTextFile('modsList.txt'))
 			{
 				var dat:Array<String> = mod.split("|");
 				var folder:String = dat[0];
@@ -215,7 +218,7 @@ class Mods
 			fileStr += values[0] + '|' + (values[1] ? '1' : '0');
 		}
 
-		File.saveContent(#if mobile Sys.getCwd() + #end 'modsList.txt', fileStr);
+		File.saveContent('modsList.txt', fileStr);
 		updatedOnState = true;
 		//trace('Saved modsList.txt');
 		#end
