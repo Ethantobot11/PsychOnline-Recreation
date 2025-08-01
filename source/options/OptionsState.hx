@@ -6,19 +6,16 @@ import backend.StageData;
 
 class OptionsState extends MusicBeatState
 {
-	var options:Array<String> = ['Note Colors', 'Controls', 'Adjust Delay and Combo', 'Graphics and Performance', 'Visuals and UI', 'Gameplay', 'Mobile Options'];
+	var options:Array<String> = ['Note Colors', 'Controls', 'Adjust Delay and Combo', 'Graphics and Performance', 'Visuals and UI', 'Gameplay'];
 	private var grpOptions:FlxTypedGroup<Alphabet>;
 	private static var curSelected:Int = 0;
 	public static var menuBG:FlxSprite;
 	public static var onPlayState:Bool = false;
 	public static var onOnlineRoom:Bool = false;
+	public static var hadMouseVisible:Bool = false;
 	public static var loadedMod:String = '';
 
 	function openSelectedSubstate(label:String) {
-		if (label != "Adjust Delay and Combo"){
-			removeTouchPad();
-			persistentUpdate = false;
-		}
 		switch(label) {
 			case 'Note Colors':
 				openSubState(new options.NotesSubState());
@@ -32,8 +29,6 @@ class OptionsState extends MusicBeatState
 				openSubState(new options.GameplaySettingsSubState());
 			case 'Adjust Delay and Combo':
 				FlxG.switchState(() -> new options.NoteOffsetState());
-			case 'Mobile Options':
-				openSubState(new mobile.options.MobileOptionsSubState());
 		}
 	}
 
@@ -41,6 +36,9 @@ class OptionsState extends MusicBeatState
 	var selectorRight:Alphabet;
 
 	override function create() {
+		hadMouseVisible = FlxG.mouse.visible;
+		FlxG.mouse.visible = true;
+
 		OptionsState.loadedMod = Mods.currentModDirectory;
 		
 		#if DISCORD_ALLOWED
@@ -74,8 +72,6 @@ class OptionsState extends MusicBeatState
 		changeSelection();
 		ClientPrefs.saveSettings();
 
-		addTouchPad('UP_DOWN', 'A_B');
-
 		super.create();
 
 		online.GameClient.send("status", "In the Game Options");
@@ -83,11 +79,8 @@ class OptionsState extends MusicBeatState
 
 	override function closeSubState() {
 		super.closeSubState();
+		FlxG.mouse.visible = true;
 		ClientPrefs.saveSettings();
-		controls.isInSubstate = false;
-		removeTouchPad();
-		addTouchPad('UP_DOWN', 'A_B');
-		persistentUpdate = true;
 	}
 
 	override function update(elapsed:Float) {
@@ -99,8 +92,21 @@ class OptionsState extends MusicBeatState
 		if (controls.UI_DOWN_P) {
 			changeSelection(1);
 		}
+		
+		if (FlxG.mouse.deltaScreenY != 0) {
+			for (i => spr in grpOptions) {
+				if (FlxG.mouse.overlaps(spr, spr.camera) && i - curSelected != 0) {
+					changeSelection(i - curSelected);
+				}
+			}
+		}
+
+		if (FlxG.mouse.wheel != 0) {
+			changeSelection(-FlxG.mouse.wheel);
+		}
 
 		if (controls.BACK) {
+			FlxG.mouse.visible = hadMouseVisible;
 			Mods.currentModDirectory = OptionsState.loadedMod;
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 			if(onPlayState)
@@ -114,7 +120,7 @@ class OptionsState extends MusicBeatState
 			}
 			else FlxG.switchState(() -> new MainMenuState());
 		}
-		else if (controls.ACCEPT) openSelectedSubstate(options[curSelected]);
+		else if (controls.ACCEPT || FlxG.mouse.justPressed) openSelectedSubstate(options[curSelected]);
 	}
 	
 	function changeSelection(change:Int = 0) {
