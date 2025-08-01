@@ -21,8 +21,8 @@ import lime.utils.Assets;
 import openfl.media.Sound;
 
 #if sys
-import backend.io.PsychFile as File;
-import backend.io.PsychFileSystem as FileSystem;
+import sys.io.File;
+import sys.FileSystem;
 #end
 import tjson.TJSON as Json;
 
@@ -47,9 +47,8 @@ class Paths
 		'assets/music/freakyMenu.$SOUND_EXT',
 		'assets/shared/music/breakfast.$SOUND_EXT',
 		'assets/shared/music/tea-time.$SOUND_EXT',
-		'assets/images/bf1.astc',
-		'assets/images/bf2.astc',
-		'assets/mobile/touchpad/bg.astc'
+		'assets/images/bf1.png',
+		'assets/images/bf2.png',
 	];
 	/// haya I love you for the base cache dump I took to the max
 	public static function clearUnusedMemory() {
@@ -82,9 +81,8 @@ class Paths
 	public static function clearStoredMemory(?cleanUnused:Bool = false) {
 		// clear anything not in the tracked assets list
 		@:privateAccess
-		for (key in FlxG.bitmap._cache.keys())
+		for (key => obj in FlxG.bitmap._cache)
 		{
-			var obj = FlxG.bitmap._cache.get(key);
 			if (obj != null && !currentTrackedAssets.exists(key) && !dumpExclusions.contains(key)) {
 				openfl.Assets.cache.removeBitmapData(key);
 				FlxG.bitmap._cache.remove(key);
@@ -120,9 +118,6 @@ class Paths
 			if(FileSystem.exists(modded)) return modded;
 		}
 		#end
-
-		if (library == "mobile")
-			return getPreloadPath('mobile/$file');
 
 		if (library != null)
 			return getLibraryPath(file, library);
@@ -266,25 +261,14 @@ class Paths
 		else
 		#end
 		{
-			file = getPath('images/$key.astc', BINARY, library);
+			file = getPath('images/$key.png', IMAGE, library);
 			if (currentTrackedAssets.exists(file))
 			{
 				localTrackedAssets.push(file);
 				return currentTrackedAssets.get(file);
 			}
-			else if (OpenFlAssets.exists(file, BINARY))
+			else if (OpenFlAssets.exists(file, IMAGE))
 				bitmap = OpenFlAssets.getBitmapData(file);
-			else
-			{
-				file = getPath('images/$key.png', IMAGE, library);
-				if (currentTrackedAssets.exists(file))
-				{
-					localTrackedAssets.push(file);
-					return currentTrackedAssets.get(file);
-				}
-				else if (OpenFlAssets.exists(file, IMAGE))
-					bitmap = OpenFlAssets.getBitmapData(file);
-			}
 		}
 
 		if (bitmap != null)
@@ -455,21 +439,16 @@ class Paths
 		// trace(gottenPath);
 		try {
 			if(!currentTrackedSounds.exists(gottenPath))
+			#if MODS_ALLOWED
+				currentTrackedSounds.set(gottenPath, Sound.fromFile(#if !mobile './' + #end gottenPath));
+			#else
 			{
-				var sound:Sound = null;
-				final fullPath:String = #if !mobile './' + #end gottenPath;
-
-				if (sys.FileSystem.exists(fullPath))
-					sound = Sound.fromFile(fullPath);
-				else
-				{
-					var folder:String = '';
-					if(path == 'songs') folder = 'songs:';
-					sound = OpenFlAssets.getSound(folder + getPath('$path/$key.$SOUND_EXT', SOUND, library));
-				}
-
-				currentTrackedSounds.set(gottenPath, sound);
+				var folder:String = '';
+				if(path == 'songs') folder = 'songs:';
+		
+				currentTrackedSounds.set(gottenPath, OpenFlAssets.getSound(folder + getPath('$path/$key.$SOUND_EXT', SOUND, library)));
 			}
+			#end
 		} catch (e:Dynamic) {
 			if (ClientPrefs.isDebug())
 				Sys.println('Paths.returnSound(): SOUND NOT FOUND: $key');
@@ -481,7 +460,7 @@ class Paths
 
 	#if MODS_ALLOWED
 	inline static public function mods(key:String = '') {
-		return #if mobile Sys.getCwd() + #end 'mods/' + key;
+		return 'mods/' + key;
 	}
 
 	inline static public function modsFont(key:String) {
@@ -539,7 +518,7 @@ class Paths
 			if(FileSystem.exists(fileToCheck))
 				return fileToCheck;
 		}
-		return #if mobile Sys.getCwd() + #end 'mods/' + key;
+		return 'mods/' + key;
 	}
 	#end
 
@@ -580,12 +559,6 @@ class Paths
 				}
 				else if (Paths.fileExists('images/$originalPath/spritemap$st.png', IMAGE)) {
 					// trace('found Sprite PNG');
-					changedImage = true;
-					loadSpriteMap(frames, spriteJson, folderOrImg = Paths.image('$originalPath/spritemap$st'));
-					break;
-				}
-				else if (Paths.fileExists('images/$originalPath/spritemap$st.astc', BINARY)) {
-					// trace('found Sprite ASTC');
 					changedImage = true;
 					loadSpriteMap(frames, spriteJson, folderOrImg = Paths.image('$originalPath/spritemap$st'));
 					break;
