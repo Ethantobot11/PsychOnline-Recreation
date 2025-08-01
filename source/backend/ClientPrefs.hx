@@ -11,18 +11,7 @@ import flixel.input.gamepad.FlxGamepadInputID;
 import states.TitleState;
 
 // Add a variable here and it will get automatically saved
-@:structInit class SaveVariables {
-	// Mobile and Mobile Controls Releated
-	public var extraHints:String = "NONE"; // mobile extra hint option
-	public var hitboxPos:Bool = true; // hitbox extra hint position option
-	public var dynamicColors:Bool = true; // yes cause its cool -Karim
-	public var controlsAlpha:Float = FlxG.onMobile ? 0.6 : 0;
-	public var screensaver:Bool = false;
-	public var wideScreen:Bool = false;
-	public var hitboxType:String = "Gradient";
-	public var vsync:Bool = false;
-	public var disableOnlineShaders:Bool = false;
-
+class SaveVariables {
 	public var downScroll:Bool = false;
 	public var middleScroll:Bool = false;
 	public var opponentStrums:Bool = true;
@@ -114,6 +103,10 @@ import states.TitleState;
 	public var favsAsMenuTheme:Bool = false;
 	public var disableComboRating:Bool = false;
 	public var disableComboCounter:Bool = false;
+	public var networkServerAddress:String = null;
+	public var hiddenTips:Array<String> = null;
+	public var nameplateFadeTime:Float = 10;
+	public var verticalRatingPos:Bool = false;
 
 	public function new()
 	{
@@ -122,8 +115,8 @@ import states.TitleState;
 }
 
 class ClientPrefs {
-	public static var data:SaveVariables = {};
-	public static var defaultData:SaveVariables = {};
+	public static var data:SaveVariables = null;
+	public static var defaultData:SaveVariables = null;
 
 	//Every key has two binds, add your key bind down here and then add your control on options/ControlsSubState.hx and Controls.hx
 	public static var keyBinds:Map<String, Array<FlxKey>> = [
@@ -172,24 +165,6 @@ class ClientPrefs {
 		'sidebar'		=> [],
 		'fav'			=> [Y]
 	];
-	public static var mobileBinds:Map<String, Array<MobileInputID>> = [
-		'note_up'		=> [NOTE_UP],
-		'note_left'		=> [NOTE_LEFT],
-		'note_down'		=> [NOTE_DOWN],
-		'note_right'	=> [NOTE_RIGHT],
-
-		'ui_up'			=> [UP],
-		'ui_left'		=> [LEFT],
-		'ui_down'		=> [DOWN],
-		'ui_right'		=> [RIGHT],
-
-		'accept'		=> [A],
-		'back'			=> [B],
-		'pause'			=> [#if android NONE #else P #end],
-		'reset'			=> [NONE],
-		'taunt'			=> [T]
-	];
-	public static var defaultMobileBinds:Map<String, Array<MobileInputID>> = null;
 	public static var defaultKeys:Map<String, Array<FlxKey>> = null;
 	public static var defaultButtons:Map<String, Array<FlxGamepadInputID>> = null;
 
@@ -216,16 +191,13 @@ class ClientPrefs {
 	public static function clearInvalidKeys(key:String) {
 		var keyBind:Array<FlxKey> = keyBinds.get(key);
 		var gamepadBind:Array<FlxGamepadInputID> = gamepadBinds.get(key);
-		var mobileBind:Array<MobileInputID> = mobileBinds.get(key);
 		while(keyBind != null && keyBind.contains(NONE)) keyBind.remove(NONE);
 		while(gamepadBind != null && gamepadBind.contains(NONE)) gamepadBind.remove(NONE);
-		while(mobileBind != null && mobileBind.contains(NONE)) mobileBind.remove(NONE);
 	}
 
 	public static function loadDefaultKeys() {
 		defaultKeys = keyBinds.copy();
 		defaultButtons = gamepadBinds.copy();
-		defaultMobileBinds = mobileBinds.copy();
 	}
 
 	public static function saveSettings() {
@@ -233,8 +205,7 @@ class ClientPrefs {
 			//trace('saved variable: $key');
 			Reflect.setField(FlxG.save.data, key, Reflect.field(data, key));
 		}
-		FlxG.save.data.achievementsMap = Achievements.achievementsMap;
-		FlxG.save.data.henchmenDeath = Achievements.henchmenDeath;
+		#if ACHIEVEMENTS_ALLOWED Achievements.save(); #end
 		FlxG.save.flush();
 
 		//Placing this in a separate save so that it can be manually deleted without removing your Score and stuff
@@ -242,12 +213,14 @@ class ClientPrefs {
 		save.bind('controls_v3', CoolUtil.getSavePath());
 		save.data.keyboard = keyBinds;
 		save.data.gamepad = gamepadBinds;
-		save.data.mobile = mobileBinds;
 		save.flush();
 		FlxG.log.add("Settings saved!");
 	}
 
 	public static function loadPrefs() {
+		if(data == null) data = new SaveVariables();
+		if(defaultData == null) defaultData = new SaveVariables();
+
 		for (key in Reflect.fields(data)) {
 			if (key != 'gameplaySettings' && Reflect.hasField(FlxG.save.data, key)) {
 				//trace('loaded variable: $key');
@@ -311,11 +284,6 @@ class ClientPrefs {
 					if(gamepadBinds.exists(control)) gamepadBinds.set(control, keys);
 				}
 			}
-			if(save.data.mobile != null) {
-				var loadedControls:Map<String, Array<MobileInputID>> = save.data.mobile;
-				for (control => keys in loadedControls)
-					if(mobileBinds.exists(control)) mobileBinds.set(control, keys);
-			}
 			reloadVolumeKeys();
 		}
 
@@ -324,7 +292,7 @@ class ClientPrefs {
 
 	inline public static function getGameplaySetting(name:String, defaultValue:Dynamic = null, ?customDefaultValue:Bool = false):Dynamic {
 		if(!customDefaultValue) defaultValue = defaultData.gameplaySettings.get(name);
-		var daGameplaySetting:Dynamic = GameClient.isConnected() && !GameClient.room.state.permitModifiers ? GameClient.getGameplaySetting(name) : data.gameplaySettings.get(name);
+		var daGameplaySetting:Dynamic = GameClient.isConnected() ? GameClient.getGameplaySetting(name) : data.gameplaySettings.get(name);
 		if (PlayState.replayData?.gameplay_modifiers != null) {
 			daGameplaySetting = PlayState.replayData?.gameplay_modifiers?.get(name);
 		}
@@ -337,8 +305,8 @@ class ClientPrefs {
 		TitleState.volumeUpKeys = keyBinds.get('volume_up').copy();
 		toggleVolumeKeys(true);
 	}
-	public static function toggleVolumeKeys(?turnOn:Bool = true) {
-		if(!Controls.instance.mobileC && turnOn)
+	public static function toggleVolumeKeys(turnOn:Bool) {
+		if(turnOn)
 		{
 			FlxG.sound.muteKeys = TitleState.muteKeys;
 			FlxG.sound.volumeDownKeys = TitleState.volumeDownKeys;
@@ -398,17 +366,20 @@ class ClientPrefs {
 
 		if (player == 0)
 			return [ 
-				CoolUtil.asta(GameClient.room.state.player1.arrowColor0),
-				CoolUtil.asta(GameClient.room.state.player1.arrowColor1),
-				CoolUtil.asta(GameClient.room.state.player1.arrowColor2),
-				CoolUtil.asta(GameClient.room.state.player1.arrowColor3),
+				CoolUtil.asta(GameClient.getPlayerSelf().arrowColor0),
+				CoolUtil.asta(GameClient.getPlayerSelf().arrowColor1),
+				CoolUtil.asta(GameClient.getPlayerSelf().arrowColor2),
+				CoolUtil.asta(GameClient.getPlayerSelf().arrowColor3),
 			];
+
+		if (PlayState.instance?.opponentPlayer == null)
+			return defaultData.arrowRGB;
 		
 		return [
-			CoolUtil.asta(GameClient.room.state.player2.arrowColor0),
-			CoolUtil.asta(GameClient.room.state.player2.arrowColor1),
-			CoolUtil.asta(GameClient.room.state.player2.arrowColor2),
-			CoolUtil.asta(GameClient.room.state.player2.arrowColor3),
+			CoolUtil.asta(PlayState.instance.opponentPlayer.arrowColor0),
+			CoolUtil.asta(PlayState.instance.opponentPlayer.arrowColor1),
+			CoolUtil.asta(PlayState.instance.opponentPlayer.arrowColor2),
+			CoolUtil.asta(PlayState.instance.opponentPlayer.arrowColor3),
 		];
 	}
 
@@ -418,17 +389,20 @@ class ClientPrefs {
 
 		if (player == 0)
 			return [
-				CoolUtil.asta(GameClient.room.state.player1.arrowColorP0),
-				CoolUtil.asta(GameClient.room.state.player1.arrowColorP1),
-				CoolUtil.asta(GameClient.room.state.player1.arrowColorP2),
-				CoolUtil.asta(GameClient.room.state.player1.arrowColorP3),
+				CoolUtil.asta(GameClient.getPlayerSelf().arrowColorP0),
+				CoolUtil.asta(GameClient.getPlayerSelf().arrowColorP1),
+				CoolUtil.asta(GameClient.getPlayerSelf().arrowColorP2),
+				CoolUtil.asta(GameClient.getPlayerSelf().arrowColorP3),
 			];
 
+		if (PlayState.instance?.opponentPlayer == null)
+			return defaultData.arrowRGBPixel;
+
 		return [
-			CoolUtil.asta(GameClient.room.state.player2.arrowColorP0),
-			CoolUtil.asta(GameClient.room.state.player2.arrowColorP1),
-			CoolUtil.asta(GameClient.room.state.player2.arrowColorP2),
-			CoolUtil.asta(GameClient.room.state.player2.arrowColorP3),
+			CoolUtil.asta(PlayState.instance.opponentPlayer.arrowColorP0),
+			CoolUtil.asta(PlayState.instance.opponentPlayer.arrowColorP1),
+			CoolUtil.asta(PlayState.instance.opponentPlayer.arrowColorP2),
+			CoolUtil.asta(PlayState.instance.opponentPlayer.arrowColorP3),
 		];
 	}
 
@@ -438,8 +412,8 @@ class ClientPrefs {
 			return data.noteSkin;
 
 		if(player == 0)
-			return GameClient.room.state.player1.noteSkin;
+			return GameClient.getPlayerSelf().noteSkin;
 		else
-			return GameClient.room.state.player2.noteSkin;
+			return PlayState.instance?.opponentPlayer?.noteSkin ?? defaultData.noteSkin;
 	}
 }
