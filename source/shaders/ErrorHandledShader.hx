@@ -1,7 +1,7 @@
 package shaders;
 
-import backend.io.PsychFile as File;
-import backend.io.PsychFileSystem as FileSystem;
+import sys.io.File;
+import sys.FileSystem;
 import flixel.system.FlxAssets.FlxShader;
 import flixel.addons.display.FlxRuntimeShader;
 import lime.graphics.opengl.GLProgram;
