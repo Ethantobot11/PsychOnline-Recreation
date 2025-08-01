@@ -17,8 +17,8 @@ import flixel.addons.display.FlxRuntimeShader;
 #end
 
 #if sys
-import backend.io.PsychFileSystem as FileSystem;
-import backend.io.PsychFile as File;
+import sys.FileSystem;
+import sys.io.File;
 #end
 
 import cutscenes.DialogueBoxPsych;
@@ -43,8 +43,6 @@ import psychlua.HScript;
 import psychlua.DebugLuaText;
 import psychlua.ModchartSprite;
 
-import mobile.psychlua.Functions;
-
 class FunkinLua {
 	public static var Function_Stop:Dynamic = "##PSYCHLUA_FUNCTIONSTOP";
 	public static var Function_Continue:Dynamic = "##PSYCHLUA_FUNCTIONCONTINUE";
@@ -57,6 +55,7 @@ class FunkinLua {
 	#end
 	public var camTarget:FlxCamera;
 	public var scriptName:String = '';
+	public var modFolder:String = null;
 	public var closed:Bool = false;
 
 	#if HSCRIPT_ALLOWED
@@ -87,6 +86,12 @@ class FunkinLua {
 		this.scriptName = scriptName;
 		var game:PlayState = PlayState.instance;
 		game.luaArray.push(this);
+
+		var myFolder:Array<String> = this.scriptName.split('/');
+		#if MODS_ALLOWED
+		if(myFolder[0] + '/' == Paths.mods() && (Mods.currentModDirectory == myFolder[1] || Mods.getGlobalMods().contains(myFolder[1]))) //is inside mods folder
+			this.modFolder = myFolder[1];
+		#end
 
 		// Lua shit
 		set('Function_StopLua', Function_StopLua);
@@ -198,7 +203,7 @@ class FunkinLua {
 
 		// Noteskin/Splash
 		set('noteSkin', ClientPrefs.data.noteSkin);
-		set('noteSkinPostfix', Note.getNoteSkinPostfix(!GameClient.room?.state?.swagSides ?? true));
+		set('noteSkinPostfix', Note.getNoteSkinPostfix(GameClient.getPlayerSelf()?.bfSide ?? true));
 		set('splashSkin', ClientPrefs.data.splashSkin);
 		set('splashSkinPostfix', NoteSplash.getSplashSkinPostfix());
 		set('splashAlpha', ClientPrefs.data.splashAlpha);
@@ -218,176 +223,6 @@ class FunkinLua {
 				runningScripts.push(script.scriptName);
 
 			return runningScripts;
-		});
-
-		//UMM Shit
-		set('online',GameClient.isConnected());
-		set('localPlay',false);
-		set('leftSide',GameClient.isConnected()?!PlayState.playsAsBF():PlayState.opponentMode);
-        addLuaCallback("send", function(message:String, title:String) {
-			online.GameClient.send("custom", [title, message]);
-		});
-		//
-
-		addLuaCallback("sendMessage", function(type:String, message:Dynamic) {
-			online.GameClient.send("custom", [type, message]);
-		});
-
-		addLuaCallback("playsAsBF", function() {
-			return PlayState.playsAsBF();
-		});
-
-		addLuaCallback("isRoomOwner", function() {
-			return GameClient.isOwner;
-		});
-
-		addLuaCallback("hasRoomPerms", function() {
-			return GameClient.hasPerms();
-		});
-
-		addLuaCallback("isRoomConnected", function() {
-			return GameClient.isConnected();
-		});
-
-		addLuaCallback("getStateSong", function() {
-			return GameClient.room.state.song;
-		});
-
-		addLuaCallback("getStateFolder", function() {
-			return GameClient.room.state.folder;
-		});
-
-		addLuaCallback("getStateDiff", function() {
-			return GameClient.room.state.diff;
-		});
-
-		addLuaCallback("getStateModDir", function() {
-			return GameClient.room.state.modDir;
-		});
-
-		addLuaCallback("getStateModURL", function() {
-			return GameClient.room.state.modURL;
-		});
-
-		addLuaCallback("getStateIsPrivate", function() {
-			return GameClient.room.state.isPrivate;
-		});
-
-		addLuaCallback("getStateIsStarted", function() {
-			return GameClient.room.state.isStarted;
-		});
-
-		addLuaCallback("isSwapSides", function() {
-			return GameClient.room.state.swagSides;
-		});
-
-		addLuaCallback("isAnarchyMode", function() {
-			return GameClient.room.state.anarchyMode;
-		});
-
-		addLuaCallback("getPlayerScore", function(player:Int) {
-			if (player == 1)
-				return GameClient.room.state.player1.score;
-			else
-				return GameClient.room.state.player2.score;
-		});
-
-		addLuaCallback("getPlayerMisses", function(player:Int) {
-			if (player == 1)
-				return GameClient.room.state.player1.misses;
-			else
-				return GameClient.room.state.player2.misses;
-		});
-
-		addLuaCallback("getPlayerSicks", function(player:Int) {
-			if (player == 1)
-				return GameClient.room.state.player1.sicks;
-			else
-				return GameClient.room.state.player2.sicks;
-		});
-
-		addLuaCallback("getPlayerGoods", function(player:Int) {
-			if (player == 1)
-				return GameClient.room.state.player1.goods;
-			else
-				return GameClient.room.state.player2.goods;
-		});
-
-		addLuaCallback("getPlayerBads", function(player:Int) {
-			if (player == 1)
-				return GameClient.room.state.player1.bads;
-			else
-				return GameClient.room.state.player2.bads;
-		});
-
-		addLuaCallback("getPlayerShits", function(player:Int) {
-			if (player == 1)
-				return GameClient.room.state.player1.shits;
-			else
-				return GameClient.room.state.player2.shits;
-		});
-
-		addLuaCallback("getPlayerName", function(player:Int) {
-			if (player == 1)
-				return GameClient.room.state.player1.name;
-			else
-				return GameClient.room.state.player2.name;
-		});
-
-		addLuaCallback("getPlayerHasLoaded", function(player:Int) {
-			if (player == 1)
-				return GameClient.room.state.player1.hasLoaded;
-			else
-				return GameClient.room.state.player2.hasLoaded;
-		});
-
-		addLuaCallback("getPlayerHasEnded", function(player:Int) {
-			if (player == 1)
-				return GameClient.room.state.player1.hasEnded;
-			else
-				return GameClient.room.state.player2.hasEnded;
-		});
-
-		addLuaCallback("getPlayerPing", function(player:Int) {
-			if (player == 1)
-				return GameClient.room.state.player1.ping;
-			else
-				return GameClient.room.state.player2.ping;
-		});
-
-		addLuaCallback("getPlayerSkinMod", function(player:Int) {
-			if (player == 1)
-				return GameClient.room.state.player1.skinMod;
-			else
-				return GameClient.room.state.player2.skinMod;
-		});
-
-		addLuaCallback("getPlayerSkinName", function(player:Int) {
-			if (player == 1)
-				return GameClient.room.state.player1.skinName;
-			else
-				return GameClient.room.state.player2.skinName;
-		});
-
-		addLuaCallback("getPlayerSkinURL", function(player:Int) {
-			if (player == 1)
-				return GameClient.room.state.player1.skinURL;
-			else
-				return GameClient.room.state.player2.skinURL;
-		});
-
-		addLuaCallback("getPlayerAccuracy", function(player:Int) {
-			if (player == 1)
-				return GameClient.getPlayerAccuracyPercent(GameClient.room.state.player1);
-			else
-				return GameClient.getPlayerAccuracyPercent(GameClient.room.state.player2);
-		});
-
-		addLuaCallback("getPlayerRating", function(player:Int) {
-			if (player == 1)
-				return GameClient.getPlayerRating(GameClient.room.state.player1);
-			else
-				return GameClient.getPlayerRating(GameClient.room.state.player2);
 		});
 		
 		addLocalCallback("setOnScripts", function(varName:String, arg:Dynamic, ?ignoreSelf:Bool = false, ?exclusions:Array<String> = null) {
@@ -1620,6 +1455,23 @@ class FunkinLua {
 			}
 		});
 
+		// mod settings
+		#if MODS_ALLOWED
+		addLocalCallback("getModSetting", function(saveTag:String, ?modName:String = null) {
+			if(modName == null)
+			{
+				if(this.modFolder == null)
+				{
+					luaTrace('getModSetting: Argument #2 is null and script is not inside a packed Mod folder!', false, false, FlxColor.RED);
+					return null;
+				}
+				modName = this.modFolder;
+			}
+			return LuaUtils.getModSetting(saveTag, modName);
+		});
+		#end
+		//
+
 		Lua_helper.add_callback(lua, "debugPrint", function(text:Dynamic = '', color:String = 'WHITE') PlayState.instance.addTextToDebug(text, CoolUtil.colorFromString(color)));
 		
 		addLocalCallback("close", function() {
@@ -1630,6 +1482,7 @@ class FunkinLua {
 		});
 
 		#if DISCORD_ALLOWED DiscordClient.addLuaCallbacks(lua); #end
+		#if ACHIEVEMENTS_ALLOWED Achievements.addLuaCallbacks(this); #end
 		#if HSCRIPT_ALLOWED HScript.implement(this); #end
 		#if flxanimate FlxAnimateFunctions.implement(this); #end
 		ReflectionFunctions.implement(this);
@@ -1638,8 +1491,7 @@ class FunkinLua {
 		CustomSubstate.implement(this);
 		ShaderFunctions.implement(this);
 		DeprecatedFunctions.implement(this);
-		MobileFunctions.implement(this);
-		#if android AndroidFunctions.implement(this); #end
+		online.backend.OnlineScriptFunctions.implement(this);
 		
 		try{
 			var result:Dynamic = LuaL.dofile(lua, scriptName);
@@ -1647,8 +1499,8 @@ class FunkinLua {
 			if(resultStr != null && result != 0) {
 				if (ClientPrefs.isDebug()) {
 					Sys.println('Lua (${scriptName}): ' + resultStr);
-					#if (desktop || android)
-					CoolUtil.showPopUp(resultStr, 'Error on lua script!');
+					#if desktop
+					lime.app.Application.current.window.alert(resultStr, 'Error on lua script!');
 					#else
 					luaTrace('$scriptName\n$resultStr', true, false, FlxColor.RED);
 					#end
