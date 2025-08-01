@@ -20,8 +20,8 @@ import lime.system.Clipboard;
 import tjson.TJSON as Json;
 
 #if sys
-import backend.io.PsychFile as File;
-import backend.io.PsychFileSystem as FileSystem;
+import sys.io.File;
+import sys.FileSystem;
 #end
 
 import objects.HealthIcon;
@@ -109,8 +109,6 @@ class WeekEditorState extends MusicBeatState
 		reloadAllShit();
 
 		FlxG.mouse.visible = true;
-
-		addTouchPad("UP_DOWN", "B");
 
 		super.create();
 	}
@@ -330,7 +328,7 @@ class WeekEditorState extends MusicBeatState
 		var isMissing:Bool = true;
 		if(assetName != null && assetName.length > 0) {
 			if( #if MODS_ALLOWED FileSystem.exists(Paths.modsImages('menubackgrounds/menu_' + assetName)) || #end
-			Assets.exists(Paths.getPath('images/menubackgrounds/menu_' + assetName + '.astc', BINARY), BINARY)) {
+			Assets.exists(Paths.getPath('images/menubackgrounds/menu_' + assetName + '.png', IMAGE), IMAGE)) {
 				bgSprite.loadGraphic(Paths.image('menubackgrounds/menu_' + assetName));
 				isMissing = false;
 			}
@@ -349,7 +347,7 @@ class WeekEditorState extends MusicBeatState
 		var isMissing:Bool = true;
 		if(assetName != null && assetName.length > 0) {
 			if( #if MODS_ALLOWED FileSystem.exists(Paths.modsImages('storymenu/' + assetName)) || #end
-			Assets.exists(Paths.getPath('images/storymenu/' + assetName + '.astc', BINARY), BINARY)) {
+			Assets.exists(Paths.getPath('images/storymenu/' + assetName + '.png', IMAGE), IMAGE)) {
 				weekThing.loadGraphic(Paths.image('storymenu/' + assetName));
 				isMissing = false;
 			}
@@ -358,7 +356,7 @@ class WeekEditorState extends MusicBeatState
 		if(isMissing) {
 			weekThing.visible = false;
 			missingFileText.visible = true;
-			missingFileText.text = 'MISSING FILE: images/storymenu/' + assetName;
+			missingFileText.text = 'MISSING FILE: images/storymenu/' + assetName + '.png';
 		}
 		recalculateStuffPosition();
 
@@ -438,7 +436,7 @@ class WeekEditorState extends MusicBeatState
 
 		if(!blockInput) {
 			ClientPrefs.toggleVolumeKeys(true);
-			if(FlxG.keys.justPressed.ESCAPE || touchPad.buttonB.justPressed) {
+			if(FlxG.keys.justPressed.ESCAPE) {
 				FlxG.switchState(() -> new MasterEditorMenu());
 				states.TitleState.playFreakyMusic();
 			}
@@ -530,15 +528,11 @@ class WeekEditorState extends MusicBeatState
 		var data:String = haxe.Json.stringify(weekFile, "\t");
 		if (data.length > 0)
 		{
-			#if mobile
-			StorageUtil.saveContent('$weekFileName.json', data);
-			#else
 			_file = new FileReference();
 			_file.addEventListener(Event.COMPLETE, onSaveComplete);
 			_file.addEventListener(Event.CANCEL, onSaveCancel);
 			_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 			_file.save(data, weekFileName + ".json");
-			#end
 		}
 	}
 	
@@ -623,7 +617,6 @@ class WeekEditorFreeplayState extends MusicBeatState
 
 		addEditorBox();
 		changeSelection();
-		addTouchPad("UP_DOWN", "B");
 		super.create();
 	}
 	
@@ -802,7 +795,7 @@ class WeekEditorFreeplayState extends MusicBeatState
 			}
 		} else {
 			ClientPrefs.toggleVolumeKeys(true);
-			if(FlxG.keys.justPressed.ESCAPE || touchPad.buttonB.justPressed) {
+			if(FlxG.keys.justPressed.ESCAPE) {
 				FlxG.switchState(() -> new MasterEditorMenu());
 				states.TitleState.playFreakyMusic();
 			}
