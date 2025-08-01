@@ -22,6 +22,7 @@ class NoteOffsetState extends MusicBeatState
 
 	var coolText:FlxText;
 	var rating:FlxSprite;
+	var ratingNext:FlxSprite;
 	var comboNums:FlxSpriteGroup;
 	var dumbTexts:FlxTypedGroup<FlxText>;
 
@@ -42,6 +43,7 @@ class NoteOffsetState extends MusicBeatState
 	var isOnline:Bool = false;
 	var switchOnline:SwagOption;
 	var switchPlayerOption:SwagOption;
+	var verticalPosOption:SwagOption;
 
 	function getComboOffset() {
 		if (!isOnline) {
@@ -54,12 +56,19 @@ class NoteOffsetState extends MusicBeatState
 			return ClientPrefs.data.comboOffsetOP2;
 	}
 
-	function getComboPos() {
-		var placement:Float = FlxG.width * 0.35;
+	function getRatingOffset(ox:Int = 0) {
+		var placementX:Float = FlxG.width * 0.35;
+		var placementY:Float = 0;
 		if (isOnline) {
-			placement = FlxG.width * (0.30 + (!isP1 ? 0.1 : -0.1));
+			placementX = FlxG.width * (0.4 + (!isP1 ? 0.15 : -0.1));
+			if (ClientPrefs.data.verticalRatingPos) {
+				placementY = ox * 250;
+			}
+			else {
+				placementX += ox * (!isP1 ? 250 : -250);
+			}
 		}
-		return placement;
+		return [placementX, placementY];
 	}
 
 	override public function create()
@@ -109,6 +118,16 @@ class NoteOffsetState extends MusicBeatState
 		rating.updateHitbox();
 		
 		add(rating);
+
+		ratingNext = new FlxSprite().loadGraphic(Paths.image('sick'));
+		ratingNext.cameras = [camHUD];
+		ratingNext.antialiasing = ClientPrefs.data.antialiasing;
+		ratingNext.setGraphicSize(Std.int(ratingNext.width * 0.7));
+		ratingNext.updateHitbox();
+		ratingNext.alpha = 0.5;
+		ratingNext.visible = false;
+
+		add(ratingNext);
 
 		comboNums = new FlxSpriteGroup();
 		comboNums.cameras = [camHUD];
@@ -189,7 +208,7 @@ class NoteOffsetState extends MusicBeatState
 		controllerPointer.cameras = [camHUD];
 		add(controllerPointer);
 
-		add(switchPlayerOption = new SwagOption("Switch Players", "If checked, the combo offset of player 2 will be chosen.", () -> {
+		add(switchPlayerOption = new SwagOption("Switch Players", "Change to the right side offsets.", () -> {
 			if (!onComboMenu || !isOnline)
 				return;
 
@@ -212,7 +231,7 @@ class NoteOffsetState extends MusicBeatState
 		switchPlayerOption.x = 20;
 		switchPlayerOption.y = FlxG.height - switchPlayerOption.height - 20;
 
-		add(switchOnline = new SwagOption("Online Placements", "If checked, online offsets are used.", () -> {
+		add(switchOnline = new SwagOption("Online Placements", "Online offsets will be used.", () -> {
 			if (!onComboMenu)
 				return;
 
@@ -230,6 +249,26 @@ class NoteOffsetState extends MusicBeatState
 		switchOnline.box.visible = true;
 		switchOnline.x = switchPlayerOption.x;
 		switchOnline.y = switchPlayerOption.y - switchOnline.height - 10;
+
+		add(verticalPosOption = new SwagOption("Vertical Rating Offset", "Ratings for back players will be vertical.", () -> {
+			if (!onComboMenu || !isOnline)
+				return;
+
+			ClientPrefs.data.verticalRatingPos = !ClientPrefs.data.verticalRatingPos;
+			ClientPrefs.saveSettings();
+			repositionCombo();
+		}, (elapsed) -> {
+			if (holdingObjectType == null && FlxG.mouse.overlaps(verticalPosOption.checkbox, camHUD) && FlxG.mouse.justPressed) {
+				verticalPosOption.onClick();
+			}
+
+			verticalPosOption.visible = onComboMenu && isOnline;
+			verticalPosOption.checked = ClientPrefs.data.verticalRatingPos;
+		}, 0, 0, ClientPrefs.data.verticalRatingPos));
+		verticalPosOption.cameras = [camHUD];
+		verticalPosOption.box.visible = true;
+		verticalPosOption.x = FlxG.width - verticalPosOption.width - 20;
+		verticalPosOption.y = FlxG.height - verticalPosOption.height - 20;
 		
 		updateMode();
 		_lastControllerMode = true;
@@ -413,7 +452,7 @@ class NoteOffsetState extends MusicBeatState
 				}
 			}
 
-			if(touchPad.buttonC.justPressed || controls.RESET)
+			if(controls.RESET)
 			{
 				for (i in 0...getComboOffset().length)
 				{
@@ -451,7 +490,7 @@ class NoteOffsetState extends MusicBeatState
 				updateNoteDelay();
 			}
 
-			if(touchPad.buttonC.justPressed || controls.RESET)
+			if(controls.RESET)
 			{
 				holdTime = 0;
 				barPercent = 0;
@@ -459,7 +498,7 @@ class NoteOffsetState extends MusicBeatState
 			}
 		}
 
-		if((!controls.controllerMode && controls.ACCEPT) ||
+		if((!controls.controllerMode && (controls.ACCEPT || FlxG.mouse.wheel != 0)) ||
 		(controls.controllerMode && FlxG.gamepads.anyJustPressed(START)))
 		{
 			onComboMenu = !onComboMenu;
@@ -534,11 +573,21 @@ class NoteOffsetState extends MusicBeatState
 
 	function repositionCombo()
 	{
-		coolText.x = getComboPos();
+		var placement = getRatingOffset();
+		coolText.x = placement[0];
+		coolText.y = placement[1];
 
 		rating.screenCenter();
 		rating.x = coolText.x - 40 + getComboOffset()[0];
+		rating.y += coolText.y;
 		rating.y -= 60 + getComboOffset()[1];
+
+		var placement = getRatingOffset(1);
+		ratingNext.visible = isOnline;
+		ratingNext.screenCenter();
+		ratingNext.x = placement[0] - 40 + getComboOffset()[0];
+		ratingNext.y += placement[1];
+		ratingNext.y -= 60 + getComboOffset()[1];
 
 		comboNums.screenCenter();
 		comboNums.x = coolText.x - 90 + getComboOffset()[2];
@@ -587,6 +636,7 @@ class NoteOffsetState extends MusicBeatState
 	function updateMode()
 	{
 		rating.visible = onComboMenu;
+		ratingNext.visible = onComboMenu;
 		comboNums.visible = onComboMenu;
 		dumbTexts.visible = onComboMenu;
 		
@@ -602,23 +652,14 @@ class NoteOffsetState extends MusicBeatState
 			controllerPointer.visible = controls.controllerMode;
 		}
 
-		removeTouchPad();
-
 		var str:String;
 		var str2:String;
-		if(onComboMenu) {
+		if(onComboMenu)
 			str = 'Combo Offset';
-			addTouchPad('NONE', 'A_B_C');
-			addTouchPadCamera();
-		} else {
+		else
 			str = 'Note/Beat Delay';
-			addTouchPad('LEFT_FULL', 'A_B_C');
-			addTouchPadCamera();
-		}
 
-		if(controls.mobileC)
-			str2 = '(Press A to Switch)';
-		else if(!controls.controllerMode)
+		if(!controls.controllerMode)
 			str2 = '(Press Accept to Switch)';
 		else
 			str2 = '(Press Start to Switch)';
